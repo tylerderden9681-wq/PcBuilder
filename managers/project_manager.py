@@ -1,14 +1,24 @@
 import json
-from pathlib import Path
+import sys
+
+if getattr(sys, 'frozen', False):
+    from app_paths import ensure_projects_file
+else:
+    import os
+    sys.path.append(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))
+    )
+    from app_paths import ensure_projects_file
 
 
 class ProjectManager:
     """
-    Данный класс хранит данные в памяти (в кеш) и синхронизируется с файлом
+    Хранит данные в памяти и синхронизируется с файлом
+    в домашней директории пользователя
     """
 
-    def __init__(self, filepath="projects.json"):
-        self.filepath = Path(filepath)
+    def __init__(self):
+        self.filepath = ensure_projects_file()
         self.projects = {}
         self.load()
 
@@ -17,7 +27,6 @@ class ProjectManager:
         if self.filepath.exists():
             with open(self.filepath, "r", encoding="utf8") as file:
                 self.projects = json.load(file)
-
         else:
             self.projects = {}
 
@@ -27,17 +36,16 @@ class ProjectManager:
             json.dump(self.projects, file, ensure_ascii=False, indent=2)
 
     def get_project(self, project_id):
-        """Получить проект по ID (из кеша)"""
+        """Получить проект по ID"""
         project_id = str(project_id)
         project = self.projects.get(project_id)
 
         if project:
-            # Возвращаем копию, чтобы случайные изменения не сломали кеш:
             return {"id": project_id, **project}
         return None
 
     def get_all_projects(self):
-        """Получить все проекты (из кеша)"""
+        """Получить все проекты"""
         return {
             pid: {"id": pid, **pdata}
             for pid, pdata in self.projects.items()
@@ -50,17 +58,12 @@ class ProjectManager:
         self.save()
 
     def update_project(self, project_id, data):
-        """
-        Обновляет проект
-        Изменяет и кеш, и файл, чтобы не было десинхроза
-        """
-
+        """Обновить проект"""
         project_id = str(project_id)
         if project_id in self.projects:
             self.projects[project_id].update(data)
             self.save()
             return True
-
         return False
 
     def delete_project(self, project_id):

@@ -1,0 +1,23 @@
+[flake8]
+exclude =
+    .git,
+    .venv,
+    venv,
+    env,
+    __pycache__,
+    .mypy_cache,
+    .pytest_cache,
+    build,
+    dist,
+    *.egg-info,
+    migrations
+
+import-order-style = google
+
+max-line-length = 79
+
+inline-quotes = double
+
+extend-ignore =
+    E203,
+    W503,

@@ -1,9 +1,6 @@
 from PyQt6.QtCore import pyqtSignal, QSize, Qt
 import qtawesome as qta
-from PyQt6.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout,
-    QLabel
-)
+from PyQt6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
 
 
 class ProjectCard(QFrame):
@@ -14,15 +11,16 @@ class ProjectCard(QFrame):
     open_project = pyqtSignal(str)
 
     def __init__(
-            self, project_id, project_name, desc,
-            price, config, parent=None
+            self, project_id, project_name,
+            desc, price, config,
+            parent=None
     ):
         super().__init__(parent)
         self.project_id = project_id
         self.setObjectName("ProjectCard")
         self.setMinimumHeight(100)
         self.setFixedWidth(730)
-        self.setMouseTracking(True)  # <- для того, чтобы отслеживать мышь
+        self.setMouseTracking(True)
 
         self._build_ui(project_name, desc, price, config)
 
@@ -32,7 +30,6 @@ class ProjectCard(QFrame):
 
         title_and_desc_layout = QHBoxLayout()
 
-        # --- Заголовок --- :
         icon_label = QLabel()
         icon_label.setPixmap(
             qta.icon(
@@ -48,7 +45,6 @@ class ProjectCard(QFrame):
         title_and_desc_layout.addWidget(project_title_label)
         title_and_desc_layout.setSpacing(5)
 
-        # --- Описание --- :
         project_desc_label = QLabel(f"<b>Описание:</b> {desc}")
         project_desc_label.setObjectName("ProjectDesc")
         project_desc_label.setWordWrap(True)
@@ -56,7 +52,6 @@ class ProjectCard(QFrame):
 
         card_layout.addLayout(title_and_desc_layout)
 
-        # --- Конфигурация --- :
         config_container_layout = QHBoxLayout()
         config_container_layout.setSpacing(5)
         config_icon_label = QLabel()
@@ -73,7 +68,6 @@ class ProjectCard(QFrame):
         config_container_layout.addWidget(project_config_label)
         card_layout.addLayout(config_container_layout)
 
-        # --- Цена + ссылка "Подробнее" (справа) ---
         price_container_layout = QHBoxLayout()
         price_container_layout.setSpacing(5)
 
@@ -92,16 +86,14 @@ class ProjectCard(QFrame):
         price_container_layout.addWidget(price_icon_label)
         price_container_layout.addWidget(project_price_label)
 
-        # --- Ссылка "Подробнее" (скрыта по умолчанию) ---
         self.details_link = QLabel(
-            f'<a href={self.project_id} style="color: #0078d7; text-decoration: none;">'
-            f'Подробнее -></a>'
+            f'<a href="{self.project_id}" style="color: #0078d7;'
+            f'text-decoration: none;">Подробнее -></a>'
         )
         self.details_link.setObjectName("DetailsLink")
         self.details_link.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.details_link.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.details_link.hide()  # <- по умолчанию скрыта
-        # А при клике на нее сразу испускаем сигнал:
+        self.details_link.hide()
         self.details_link.linkActivated.connect(self._on_link_clicked)
 
         price_container_layout.addStretch()
@@ -113,7 +105,6 @@ class ProjectCard(QFrame):
     def _on_link_clicked(self, link):
         self.open_project.emit(link)
 
-    # --- Функции для отслеживания наведения мыши:
     def enterEvent(self, event):
         self.details_link.show()
         return super().enterEvent(event)
