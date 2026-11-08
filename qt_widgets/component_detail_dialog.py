@@ -85,8 +85,8 @@ class ComponentDetailDialog(QDialog):
         self.setWindowTitle(
             f"Характеристики: {component_data.get('name', 'Компонент')}"
         )
+        self.setBaseSize(600, 500)
         self.setMinimumSize(600, 500)
-        self.setWindowState(Qt.WindowState.WindowMaximized)
         self.setObjectName("ComponentDetailDialog")
 
         self._build_ui()

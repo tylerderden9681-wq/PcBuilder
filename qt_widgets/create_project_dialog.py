@@ -1,12 +1,7 @@
 from PyQt6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QTextEdit,
-    QPushButton,
-    QMessageBox,
+    QDialog, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QTextEdit,
+    QPushButton, QMessageBox,
 )
 from PyQt6.QtCore import Qt
 

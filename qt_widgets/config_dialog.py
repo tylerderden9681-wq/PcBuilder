@@ -1,17 +1,9 @@
 import qtawesome as qta
 from PyQt6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QWidget,
-    QFrame,
-    QMessageBox,
-    QListWidget,
-    QListWidgetItem,
-    QTabWidget,
+    QDialog, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton,
+    QWidget, QFrame, QMessageBox,
+    QListWidget, QListWidgetItem, QTabWidget,
     QAbstractItemView,
 )
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
@@ -24,6 +16,8 @@ class ComponentItemWidget(QWidget):
     def __init__(self, name, price, specs=None, parent=None):
         super().__init__(parent)
         self.setObjectName("ComponentItem")
+
+        self.setFixedHeight(60)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 8, 12, 8)
@@ -79,10 +73,14 @@ class ConfigDialog(QDialog):
     Полноэкранное, с вкладками и панелью итоговой цены.
     """
 
-    def __init__(self, project_name, component_manager, parent=None):
+    def __init__(
+            self, project_name, component_manager,
+            initial_data=None, parent=None
+    ):
         super().__init__(parent)
         self.project_name = project_name
         self.component_manager = component_manager
+        self.initial_data = initial_data or {}
         self.setWindowTitle(f"Конфигурация: {project_name}")
 
         self.setMinimumSize(1000, 700)
@@ -171,6 +169,9 @@ class ConfigDialog(QDialog):
         )
         QShortcut(QKeySequence("Escape"), self).activated.connect(self.accept)
 
+        self._select_initial_components()
+        self._update_summary()
+
     def _create_summary_panel(self):
         """Панель с итоговой ценой внизу диалога"""
         panel = QFrame()
@@ -233,6 +234,7 @@ class ConfigDialog(QDialog):
         )
 
         components = self.component_manager.get_all(component_type)
+        selected_item = None
 
         if not components:
             empty_item = QListWidgetItem(
@@ -267,6 +269,12 @@ class ConfigDialog(QDialog):
 
                 list_widget.addItem(item)
                 list_widget.setItemWidget(item, item_widget)
+
+                if cid == self.selected_components.get(component_type):
+                    selected_item = item
+
+        if selected_item:
+            list_widget.setCurrentItem(selected_item)
 
         list_widget.currentItemChanged.connect(
             lambda current, previous: self._on_item_selected(
@@ -547,3 +555,17 @@ class ConfigDialog(QDialog):
         data["price"] = str(total)
 
         return data
+
+    def _select_initial_components(self):
+        """Предвыбирает компоненты из initial_data"""
+        for component_type, component_name in self.initial_data.items():
+            if component_type in [
+                "cpu", "gpu", "mat", "ram", "ssd", "pb", "case", "cooling"
+            ]:
+                if component_name and component_name != "Не указано":
+                    components = self.component_manager.get_all(component_type)
+                    for cid, comp in components.items():
+                        if comp["name"] == component_name:
+                            self.selected_components[component_type] = cid
+                            self.selected_data[component_type] = comp
+                            break

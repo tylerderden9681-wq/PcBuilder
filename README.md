@@ -6,11 +6,20 @@
 
 [Русский](#-о-проекте) | [English](#️-assembly-configurator-pcbuilder)
 
+
+## 📌 Навигация по README.md:
+
+- [📖 О проекте](#-о-проекте)
+- [✨ Возможности](#-возможности)
+- [📸 Скриншоты](#-скриншоты)
+- [🛠️ Стек технологий](#️-стек-технологий)
+- [🚀 Установка и запуск](#-установка-и-запуск)
+
 ## 📖 О проекте
 
 **PCBuilder** - Современное кроссплатформенное десктопное приложение для просмотра, управления и экспорта конфигураций сборок ПК. Разработано на **Python** с использованием фреймворка **PyQt6**.
 
-Приложение отличается чистым кодом (код писался с применением линтеров `flake8` и `black`), модульной архитектурой, тёмной темой оформления и удобными горячими клавишами.
+Приложение отличается чистым кодом, модульной архитектурой, тёмной темой оформления и удобными горячими клавишами.
 
 ---
 
@@ -30,9 +39,14 @@
 
 ## 📸 Скриншоты
 
-| Список проектов | Детальная страница |
-| :---: | :---: |
-| ![Список проектов](screenshots/list.png) | ![Детали проекта](screenshots/details.png) |
+| Дашборд | Конфигуратор | Страница проекта |
+|---------|--------------|------------------|
+| ![Дашборд](screenshots/dashboard_page.png) | ![Конфигуратор](screenshots/config_dialog.png) | ![Проект](screenshots/project_page.png) |
+
+| Характеристики комплектующих | Все проекты |
+| ----------------- | ----------------- |
+| ![Характеристика комплектующего](screenshots/info_dependence.png) | ![Все проекты](screenshots/all_projects_page.png) |
+
 
 ---
 
@@ -41,7 +55,10 @@
 - **Язык**: Python 3.10+
 - **GUI**: PyQt6
 - **Иконки**: QtAwesome
-- **Хранение данных**: JSON (с кэшированием в памяти)
+- **Хранение данных**:
+   - **О проектах пользователей** - в JSON, который создается для каждого пользователя лично
+   - **Все комплектующие** - в БД SQLite локально в папке приложения
+- **Линтеры**: black и flake8
 
 ---
 
@@ -123,9 +140,13 @@ The application is characterized by clean code (the code was written using the `
 
 ## 📸 Screenshots
 
-| Projects list | Detail Page of project |
-| :---: | :---: |
-| ![Список проектов](screenshots/list.png) | ![Детали проекта](screenshots/details.png) |
+| Dashboard | Configurator | Project Page |
+|---------|--------------|------------------|
+| ![Dashboard](screenshots/dashboard_page.png) | ![Configurator](screenshots/config_dialog.png) | ![Project](screenshots/project_page.png) |
+
+| Component specifications | All Projects |
+| ----------------- | ----------------- |
+| ![Component specifications](screenshots/info_dependence.png) | ![All Projects](screenshots/all_projects_page.png) |
 
 ---
 

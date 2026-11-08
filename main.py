@@ -1,25 +1,18 @@
 import sys
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFontDatabase
 from PyQt6.QtWidgets import (
-    QApplication,
-    QWidget,
-    QMainWindow,
-    QVBoxLayout,
-    QLabel,
-    QFrame,
-    QPushButton,
-    QScrollArea,
-    QStackedWidget,
-    QDialog,
+    QApplication, QWidget, QMainWindow,
+    QVBoxLayout, QStackedWidget, QDialog,
 )
+from PyQt6.QtCore import Qt
 
-from qt_widgets.project_card import ProjectCard
 from qt_widgets.project_page import ProjectPage
+from qt_widgets.dashboard_page import DashboardPage
 from managers.project_manager import ProjectManager
 from qt_widgets.create_project_dialog import CreateProjectDialog
 from qt_widgets.config_dialog import ConfigDialog
-from qt_widgets.component_manager import ComponentManager
+from managers.component_manager import ComponentManager
+from qt_widgets.projects_list_page import ProjectsListPage
 
 
 class PcBuilder(QMainWindow):
@@ -32,9 +25,7 @@ class PcBuilder(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Выбор проекта:")
-        self.setFixedHeight(700)
-        self.setFixedWidth(800)
+        self.setWindowTitle("PC Builder")
         central_widget = QWidget()
 
         main_layout = QVBoxLayout(central_widget)
@@ -42,121 +33,52 @@ class PcBuilder(QMainWindow):
         self.stack = QStackedWidget()
         main_layout.addWidget(self.stack)
 
-        self.list_page = self._build_list_page()
-        self.stack.addWidget(self.list_page)
+        # Страница 0: Дашборд
+        self.dashboard_page = DashboardPage(self.project_manager)
+        self.dashboard_page.open_project.connect(self.open_project_page)
+        self.dashboard_page.create_project.connect(self.create_new_project)
+        self.dashboard_page.view_all_projects.connect(self.show_all_projects)
+        self.stack.addWidget(self.dashboard_page)
 
-        self.project_page = ProjectPage(self.project_manager)
-        self.project_page.go_back.connect(self.show_list_page)
+        # Страница 1: Все проекты
+        self.projects_list_page = ProjectsListPage(self.project_manager)
+        self.projects_list_page.open_project.connect(self.open_project_page)
+        self.projects_list_page.go_back.connect(self.show_dashboard)
+        self.projects_list_page.create_project.connect(self.create_new_project)
+        self.stack.addWidget(self.projects_list_page)
+
+        # Страница 2: Детали проекта
+        self.project_page = ProjectPage(
+            self.project_manager, self.component_manager
+        )
+        self.project_page.go_back.connect(self.show_dashboard)
         self.stack.addWidget(self.project_page)
 
         self.stack.setCurrentIndex(0)
 
         self.setCentralWidget(central_widget)
 
-    def _build_list_page(self):
-        """Эта функция "собирает" начальную страницу"""
-        page = QWidget()
-        layout = QVBoxLayout(page)
-
-        blue_gradient_text = (
-            "Добро пожаловать в "
-            "<span style='color:#0041a8;'>P</span>"
-            "<span style='color:#0055c4;'>C</span>"
-            "<span style='color:#006ae0;'>B</span>"
-            "<span style='color:#0080ff;'>u</span>"
-            "<span style='color:#1aa3ff;'>i</span>"
-            "<span style='color:#33b5ff;'>l</span>"
-            "<span style='color:#4dc8ff;'>d</span>"
-            "<span style='color:#66daff;'>e</span>"
-            "<span style='color:#80ecff;'>r</span>!"
-        )
-
-        welcome_title_label = QLabel(blue_gradient_text)
-        welcome_title_label.setObjectName("WelcomeTitle")
-        welcome_title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(welcome_title_label)
-
-        welcome_desc_label = QLabel(
-            "Выберите проект из предпложенного списка:"
-        )
-        welcome_desc_label.setObjectName("WelcomeDesc")
-        welcome_desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(welcome_desc_label)
-
-        scroll_area = QScrollArea()
-        scroll_area.setObjectName("ProjectsScrollArea")
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        scroll_area.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-        scroll_area.setVerticalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
-        )
-
-        # Создаем контейнер для списка карточек:
-        scroll_content = QWidget()
-        scroll_content.setObjectName("ScrollContent")
-        self.cards_layout = QVBoxLayout(scroll_content)
-        self.cards_layout.setSpacing(15)
-        self.cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        all_projects = self.project_manager.get_all_projects()
-
-        for pid, pd in all_projects.items():
-            config = (
-                f"{pd["config"]["cpu"]} | {pd["config"]["mat"]} | "
-                f"{pd["config"]["gpu"]} | "
-                f"{pd["config"]["pb"]}"
-            )
-
-            card = ProjectCard(
-                project_id=pid,
-                project_name=pd["name"],
-                desc=pd["description"],
-                price=pd["price"],
-                config=config,
-            )
-            card.open_project.connect(self.open_project_page)
-
-            self.cards_layout.addWidget(card)
-
-        scroll_area.setWidget(scroll_content)
-        layout.addWidget(scroll_area)
-
-        alter_title = QLabel("Или создайте новый проект")
-        alter_title.setObjectName("AlterTitle")
-        alter_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(alter_title)
-
-        alter_button = QPushButton("+ Создать проект")
-        alter_button.setObjectName("AlterButton")
-        alter_button.setFixedWidth(180)
-        alter_button.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        alter_button.clicked.connect(self.create_new_project)
-
-        layout.addWidget(alter_button, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        return page
-
     def open_project_page(self, project_id):
         """
-        Обработчик клика на ссылку "Подробнее"
+        Обработчик клика на проект
         Загружает данные проекта и переключает на страницу деталей.
         """
         project_data = self.project_manager.get_project(project_id)
         if project_data:
             self.project_page.load_project(project_data)
-            self.stack.setCurrentIndex(1)
+            self.stack.setCurrentIndex(2)
         else:
             print(f"Проект №{project_id} не найден!")
 
-    def show_list_page(self):
-        """Возврат к списку проектов (обработчик go_back)"""
-        # Переключаемся обратно на страницу с индексом 0:
+    def show_all_projects(self):
+        """Показывает страницу со всеми проектами"""
+        self.stack.setCurrentIndex(1)
+        self.projects_list_page.refresh()
+
+    def show_dashboard(self):
+        """Возврат к дашборду"""
         self.stack.setCurrentIndex(0)
-        self.refresh_projects_list()
+        self.dashboard_page.refresh()
 
     def create_new_project(self):
         """Открывает диалог создания проекта, затем диалог конфигурации"""
@@ -168,7 +90,7 @@ class PcBuilder(QMainWindow):
         basic_data = create_dialog.get_data()
 
         config_dialog = ConfigDialog(
-            basic_data["name"], self.component_manager, self
+            basic_data["name"], self.component_manager, parent=self
         )
         config_dialog.exec()
 
@@ -178,7 +100,7 @@ class PcBuilder(QMainWindow):
         full_project_data = {
             "name": basic_data["name"],
             "description": basic_data["description"],
-            "price": "0",
+            "price": config_data.get("price", "0"),
             "config": {
                 "cpu": config_data["cpu"],
                 "mat": config_data["mat"],
@@ -192,34 +114,8 @@ class PcBuilder(QMainWindow):
         }
 
         self.project_manager.create_project(new_id, full_project_data)
-        self.refresh_projects_list()
+        self.show_dashboard()
         self.open_project_page(new_id)
-
-    def refresh_projects_list(self):
-        """Очищает и заново строит список карточек проектов"""
-
-        while self.cards_layout.count():
-            item = self.cards_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        all_projects = self.project_manager.get_all_projects()
-
-        for pid, pd in all_projects.items():
-            config = (
-                f"{pd["config"]["cpu"]} | {pd["config"]["mat"]} | "
-                f"{pd["config"]["gpu"]} | {pd["config"]["pb"]}"
-            )
-
-            card = ProjectCard(
-                project_id=pid,
-                project_name=pd["name"],
-                desc=pd["description"],
-                price=pd["price"],
-                config=config,
-            )
-            card.open_project.connect(self.open_project_page)
-            self.cards_layout.addWidget(card)
 
 
 if __name__ == "__main__":
@@ -246,98 +142,151 @@ if __name__ == "__main__":
     global_styles = """
         QMainWindow { background-color: #18191a; }
 
-        #WelcomeTitle {
-            font-size: 24px;
+        /* ===== Дашборд ===== */
+        QWidget#DashboardPage {
+            background-color: #18191a;
+        }
+
+        QFrame#WelcomeFrame {
+            background-color: #242526;
+            border: 2px solid #3a3b3c;
+            border-radius: 10px;
+        }
+
+        QLabel#GreetingLabel {
             color: white;
+            font-size: 28px;
             font-weight: bold;
-            margin-top: 10px;
-            margin-bottom: 5px;
         }
 
-        #WelcomeDesc {
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        #ProjectsScrollArea, #ScrollContent {
-            background-color: transparent;
-        }
-
-        QFrame#ProjectCard {
-            background-color: white;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        QFrame#ProjectCard:hover {
-            border: 1px solid #0078d7;
-            background-color: #f4f9ff;
-        }
-
-        #ProjectTitle {
-            font-weight: bold;
-            font-size: 16px;
-            color: #0078d7;
-        }
-
-        #ProjectDesc {
-            color: black;
-            background-color: #d9d9d9;
-            border-radius: 5px;
-            padding: 4px 10px;
-        }
-
-        #ProjectConfig {
-            color: #555555;
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        #ProjectPrice {
-            font-weight: bold;
-            color: #2e7d32;
+        QLabel#DateLabel {
+            color: #8a8d91;
             font-size: 14px;
         }
 
-        #PriceIcon {
-            padding-top: 2px;
+        QLabel#WelcomeDesc {
+            color: #b0b3b8;
+            font-size: 16px;
         }
 
-        #DetailsLink {
-            font-weight: 600;
+        QFrame#SectionFrame {
+            background-color: #242526;
+            border: 2px solid #3a3b3c;
+            border-radius: 10px;
         }
 
-        #AlterTitle {
-            color: #e0e0e0;
+        QLabel#SectionHeader {
+            color: white;
             font-size: 18px;
-            font-weight: 600;
-            margin-top: 5px;
-            margin-bottom: 5px;
+            font-weight: bold;
         }
 
-        /* Стили для кнопки "Создать проект" */
-        QPushButton#AlterButton {
+        QFrame#StatCard {
+            background-color: #1e1f20;
+            border: 2px solid #3a3b3c;
+            border-radius: 6px;
+        }
+
+        QFrame#StatCard:hover {
+            border: 1px solid #0078d7;
+            background-color: #2d2f31;
+        }
+
+        QLabel#StatTitle {
+            color: #8a8d91;
+            font-size: 12px;
+        }
+
+        QLabel#StatValue {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono';
+        }
+
+        QPushButton#ActionButton {
             background-color: #0078d7;
             color: white;
             border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
+            padding: 12px 20px;
             font-weight: bold;
             font-size: 14px;
-            margin-bottom: 12px;
+            border-radius: 6px;
         }
 
-        QPushButton#AlterButton:hover {
+        QPushButton#ActionButton:hover {
             background-color: #005a9e;
         }
 
-        QPushButton#AlterButton:pressed {
-            background-color: #004578;
+        QPushButton#ActionButtonSecondary {
+            background-color: #242526;
+            color: white;
+            border: 2px solid #3a3b3c;
+            padding: 12px 20px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
         }
 
-        /* Стили для страницы о проекте */
+        QPushButton#ActionButtonSecondary:hover {
+            background-color: #2d2f31;
+            border: 1px solid #0078d7;
+        }
+
+        QFrame#LinkCard {
+            background-color: #1e1f20;
+            border: 2px solid #3a3b3c;
+            border-radius: 6px;
+        }
+
+        QFrame#LinkCard:hover {
+            background-color: #2d2f31;
+            border: 1px solid #0078d7;
+        }
+
+        QLabel#LinkTitle {
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        QLabel#LinkArrow {
+            color: #0078d7;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        QFrame#ProjectCardMini {
+            background-color: #1e1f20;
+            border: 2px solid #3a3b3c;
+            border-radius: 6px;
+        }
+
+        QFrame#ProjectCardMini:hover {
+            background-color: #2d2f31;
+            border: 1px solid #0078d7;
+        }
+
+        QLabel#MiniProjectName {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        QLabel#MiniProjectPrice {
+            color: #4dc8ff;
+            font-size: 13px;
+            font-family: 'JetBrains Mono';
+        }
+
+        QLabel#EmptyProjectsLabel {
+            color: #8a8d91;
+            font-size: 14px;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* ===== Страница проекта ===== */
         #ProjectPage {
             background-color: #18191a;
         }
@@ -350,7 +299,6 @@ if __name__ == "__main__":
             background-color: transparent;
             color: white;
             border: 1px solid white;
-            border-radius: 6px;
             padding: 6px 14px;
             font-weight: bold;
             font-size: 13px;
@@ -369,14 +317,12 @@ if __name__ == "__main__":
         QFrame#InfoBlock {
             background-color: white;
             border: 1px solid #3a3b3c;
-            border-radius: 10px;
             padding: 15px;
         }
 
         QFrame#PriceBlock {
             background-color: white;
             border: 3px solid #2e7d32;
-            border-radius: 10px;
             padding: 8px 15px;
         }
 
@@ -411,7 +357,6 @@ if __name__ == "__main__":
             border: 1px solid white;
             padding: 4px 10px;
             font-weight: bold;
-            border-radius: 6px;
         }
 
         #ExportButton:hover {
@@ -422,7 +367,6 @@ if __name__ == "__main__":
             background-color: rgba(128, 236, 255, 0.25);
         }
 
-        /* Стили для кнопки редактирования */
         QPushButton#EditButton {
             background-color: transparent;
             border: none;
@@ -449,7 +393,6 @@ if __name__ == "__main__":
             background-color: rgba(252, 28, 3, 0.2);
         }
 
-        /* Стили для диалога редактирования */
         QDialog#EditDialog {
             background-color: #18191a;
         }
@@ -490,7 +433,7 @@ if __name__ == "__main__":
             background-color: #004578;
         }
 
-                /* ===== Стили для диалога конфигурации ===== */
+        /* ===== Стили для диалога конфигурации ===== */
         QDialog#ConfigDialog {
             background-color: #18191a;
         }
@@ -504,7 +447,6 @@ if __name__ == "__main__":
         QLabel#ConfigDialogHint {
             color: #888;
             font-size: 12px;
-            font-style: italic;
             margin-bottom: 5px;
         }
 
@@ -548,13 +490,11 @@ if __name__ == "__main__":
             color: white;
             border: 2px solid white;
             background-color: transparent;
-            border-radius: 10px;
         }
 
         #DialogButtonSecondary {
             color: white;
             background-color: transparent;
-            border-radius: 10px;
             border: 2px solid white;
         }
 
@@ -596,12 +536,10 @@ if __name__ == "__main__":
             selection-background-color: #0078d7;
         }
 
-        /* ===== Стили для QTabWidget ===== */
         #ConfigTabs {
             background-color: #242526;
             border: 1px solid #3a3b3c;
             border-top: none;
-            border-radius: 0 0 8px 8px;
         }
 
         QTabBar::tab {
@@ -627,7 +565,6 @@ if __name__ == "__main__":
             color: white;
         }
 
-        /* ===== Содержимое вкладок ===== */
         QWidget#ConfigTab {
             background-color: #242526;
         }
@@ -644,40 +581,35 @@ if __name__ == "__main__":
             font-style: italic;
         }
 
-        /* ===== Поле поиска ===== */
         QLineEdit#ConfigSearchInput {
             background-color: #1e1f20;
             color: white;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
+            border: 2px solid #3a3b3c;
             padding: 8px 12px;
             font-size: 13px;
         }
 
         QLineEdit#ConfigSearchInput:focus {
-            border: 1px solid #0078d7;
+            border: 2px solid #0078d7;
         }
 
-        /* ===== Список компонентов ===== */
         QListWidget#ComponentList {
             background-color: #1e1f20;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
+            border: 2px solid #3a3b3c;
             padding: 4px;
             outline: none;
         }
 
         QListWidget#ComponentList::item {
             background-color: #242526;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
+            border: 2px solid #3a3b3c;
             margin: 4px 0px;
             padding: 0px;
         }
 
         QListWidget#ComponentList::item:hover {
             background-color: #2d2d2d;
-            border: 1px solid #0078d7;
+            border: 2px solid #0078d7;
         }
 
         QListWidget#ComponentList::item:selected {
@@ -685,7 +617,6 @@ if __name__ == "__main__":
             border: 1px solid #005a9e;
         }
 
-        /* ===== Кастомный виджет компонента ===== */
         QWidget#ComponentItem {
             background-color: transparent;
         }
@@ -713,7 +644,6 @@ if __name__ == "__main__":
             color: white;
         }
 
-        /* ===== Поле цены ===== */
         QLineEdit#ConfigPriceInput {
             background-color: #1e1f20;
             color: white;
@@ -727,27 +657,24 @@ if __name__ == "__main__":
             border: 1px solid #0078d7;
         }
 
-        /* ===== Панель итоговой цены (внизу диалога) ===== */
         QFrame#SummaryPanel {
             background-color: #0078d7;
-            border-radius: 8px;
             padding: 5px;
         }
 
         QLabel#SummaryLabel {
             color: white;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
         }
 
         QLabel#TotalPriceLabel {
             color: white;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             font-family: 'JetBrains Mono';
         }
 
-        /* ===== Вкладка "Итог" ===== */
         QWidget#ConfigListContainer {
             background-color: #1e1f20;
             border: 1px solid #3a3b3c;
@@ -801,232 +728,6 @@ if __name__ == "__main__":
             font-family: 'JetBrains Mono';
         }
 
-        /* ===== Полноэкранный диалог конфигурации ===== */
-        QDialog#ConfigDialog {
-            background-color: #18191a;
-        }
-
-        QLabel#ConfigDialogTitle {
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-            padding-bottom: 5px;
-        }
-
-        QLabel#ConfigDialogHint {
-            color: #888;
-            font-size: 13px;
-            font-style: italic;
-            padding-bottom: 10px;
-        }
-
-        /* ===== Вкладки ===== */
-        QTabWidget#ConfigTabs::pane {
-            background-color: #242526;
-            border: 1px solid #3a3b3c;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-        }
-
-        QTabBar::tab {
-            background-color: #1e1f20;
-            color: #aaa;
-            padding: 12px 20px;
-            border: 1px solid #3a3b3c;
-            border-bottom: none;
-            border-radius: 6px 6px 0 0;
-            margin-right: 2px;
-            font-size: 13px;
-            font-weight: 600;
-            min-width: 100px;
-        }
-
-        QTabBar::tab:selected {
-            background-color: #242526;
-            color: white;
-            border-bottom: 2px solid #0078d7;
-        }
-
-        QTabBar::tab:hover {
-            background-color: #2d2d2d;
-            color: white;
-        }
-
-        /* ===== Содержимое вкладок ===== */
-        QWidget#ConfigTab {
-            background-color: #242526;
-        }
-
-        QLabel#TabHeader {
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            padding-bottom: 5px;
-        }
-
-        QLabel#TabDescription {
-            color: #888;
-            font-size: 13px;
-            padding-bottom: 10px;
-        }
-
-        /* ===== Поле поиска ===== */
-        QLineEdit#ConfigSearchInput {
-            background-color: #1e1f20;
-            color: white;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-
-        QLineEdit#ConfigSearchInput:focus {
-            border: 1px solid #0078d7;
-        }
-
-        QLineEdit#ConfigSearchInput::placeholder {
-            color: #666;
-        }
-
-        /* ===== Список компонентов ===== */
-        QListWidget#ComponentList {
-            background-color: #1e1f20;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
-            padding: 6px;
-            outline: none;
-            font-size: 13px;
-        }
-
-        QListWidget#ComponentList::item {
-            background-color: #242526;
-            border: 1px solid #3a3b3c;
-            border-radius: 6px;
-            margin: 4px 0px;
-            padding: 0px;
-        }
-
-        QListWidget#ComponentList::item:hover {
-            background-color: #2d2d2d;
-            border: 1px solid #0078d7;
-        }
-
-        QListWidget#ComponentList::item:selected {
-            background-color: #0078d7;
-            border: 1px solid #005a9e;
-        }
-
-        /* Альтернативные строки */
-        QListWidget#ComponentList::item:nth-child(even) {
-            background-color: #2a2b2c;
-        }
-
-        QListWidget#ComponentList::item:nth-child(even):hover {
-            background-color: #2d2d2d;
-        }
-
-        /* ===== Кастомный виджет компонента ===== */
-        QWidget#ComponentItem {
-            background-color: transparent;
-        }
-
-        QLabel#ComponentName {
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        QLabel#ComponentSpecs {
-            color: #888;
-            font-size: 12px;
-        }
-
-        QLabel#ComponentPrice {
-            color: #4dc8ff;
-            font-size: 15px;
-            font-weight: bold;
-        }
-
-        QListWidget#ComponentList::item:selected QLabel#ComponentName,
-        QListWidget#ComponentList::item:selected QLabel#ComponentSpecs,
-        QListWidget#ComponentList::item:selected QLabel#ComponentPrice {
-            color: white;
-        }
-
-        /* ===== Панель итоговой цены ===== */
-        QFrame#SummaryPanel {
-            background-color: #0078d7;
-            border-radius: 8px;
-            padding: 5px;
-            margin-top: 5px;
-        }
-
-        QLabel#SummaryLabel {
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        QLabel#TotalPriceLabel {
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-            font-family: 'JetBrains Mono';
-        }
-
-        /* ===== Вкладка "Итог" ===== */
-        QFrame#ConfigListContainer {
-            background-color: #1e1f20;
-            border: 1px solid #3a3b3c;
-            border-radius: 8px;
-        }
-
-        QLabel#EmptyConfigLabel {
-            color: #888;
-            font-size: 14px;
-            font-style: italic;
-            padding: 40px;
-        }
-
-        QLabel#ConfigRowType {
-            color: #888;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        QLabel#ConfigRowName {
-            color: white;
-            font-size: 14px;
-            padding: 0 10px;
-        }
-
-        QLabel#ConfigRowPrice {
-            color: #4dc8ff;
-            font-size: 15px;
-            font-weight: bold;
-            font-family: 'JetBrains Mono';
-        }
-
-        QFrame#ConfigSeparator {
-            background-color: #3a3b3c;
-            max-height: 1px;
-            margin: 10px 0;
-        }
-
-        QLabel#ConfigTotalLabel {
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        QLabel#TabTotalPriceLabel {
-            color: #4dc8ff;
-            font-size: 24px;
-            font-weight: bold;
-            font-family: 'JetBrains Mono';
-        }
-
-        /* ===== Диалог детальной информации о компоненте ===== */
         QDialog#ComponentDetailDialog {
             background-color: #18191a;
         }
@@ -1117,9 +818,378 @@ if __name__ == "__main__":
             background-color: #2d2f31;
             border: 1px solid #0078d7;
         }
+
+        /* ===== Футер ===== */
+        QFrame#FooterFrame {
+            background-color: #1e1f20;
+            border: 2px solid #3a3b3c;
+            margin-top: 10px;
+            border-radius: 10px;
+        }
+
+        QPushButton#FooterLink {
+            background-color: transparent;
+            border: 2px solid white;
+            border-radius: 6px;
+            padding: 4px;
+        }
+
+        QPushButton#FooterLink:hover {
+            background-color: #2d2f31;
+        }
+
+        QLabel#FooterLinkText {
+            color: white;
+            font-size: 12px;
+        }
+
+        QPushButton#FooterLink:hover QLabel#FooterLinkText {
+            color: #0078d7;
+        }
+
+        QFrame#FooterLink {
+            background-color: transparent;
+            border-radius: 6px;
+            border: 2px solid #3a3b3c;
+        }
+
+        QFrame#FooterLink:hover {
+            background-color: #2d2f31;
+        }
+
+        QLabel#FooterLinkText {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        QFrame#FooterLink:hover QLabel#FooterLinkText {
+            color: #747474;
+        }
+
+        QLabel#FooterVersion {
+            color: #4dc8ff;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono';
+        }
+
+        QLabel#FooterAuthor {
+            color: #8a8d91;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        QLabel#FooterYear {
+            color: #8a8d91;
+            font-size: 12px;
+        }
+
+        QLabel#FooterDot {
+            color: #3a3b3c;
+            font-size: 12px;
+        }
+
+        /* ===== Страница всех проектов ===== */
+        QWidget#ProjectsListPage {
+            background-color: #18191a;
+        }
+
+        QLabel#PageTitle {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        QPushButton#ViewAllButton {
+            background-color: #0078d7;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        QPushButton#ViewAllButton:hover {
+            background-color: #005a9e;
+            color: white;
+        }
+
+        QLabel#EmptyLabel {
+            color: #8a8d91;
+            font-size: 16px;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        #ProjectsScroll, #ProjectsContent {
+            background-color: transparent;
+        }
+
+        /* ===== Карточки проектов ===== */
+    `    QFrame#ProjectCard {
+            background-color: #242526;
+            border: 1px solid #3a3b3c;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px 0;
+        }
+
+        QFrame#ProjectCard:hover {
+            border: 1px solid #0078d7;
+            background-color: #2d2f31;
+        }
+
+        QLabel#ProjectTitle {
+            font-weight: bold;
+            font-size: 16px;
+            color: #0078d7;
+        }
+
+        QLabel#ProjectDesc {
+            color: #b0b3b8;
+            background-color: #1e1f20;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        QLabel#ProjectConfig {
+            color: #8a8d91;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        QLabel#ProjectPrice {
+            font-weight: bold;
+            color: #2e7d32;
+            font-size: 14px;
+            font-family: 'JetBrains Mono';
+        }
+
+        QLabel#PriceIcon {
+            padding-top: 2px;
+        }
+
+        QLabel#DetailsLink {
+            font-weight: 600;
+            color: #0078d7;
+        }
+
+        QLabel#DetailsLink:hover {
+            color: #4dc8ff;
+        }
+
+        /* ===== Панель управления ===== */
+        QFrame#ControlPanel {
+            background-color: #242526;
+            border: 1px solid #3a3b3c;
+            border-radius: 10px;
+        }
+
+        QLabel#ControlLabel {
+            color: #8a8d91;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        QLineEdit#SearchInput {
+            background-color: #1e1f20;
+            color: white;
+            border: 1px solid #3a3b3c;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        QLineEdit#SearchInput:focus {
+            border: 1px solid #0078d7;
+        }
+
+        QComboBox#SortCombo {
+            background-color: #1e1f20;
+            color: white;
+            border: 1px solid #3a3b3c;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            min-width: 150px;
+        }
+
+        QPushButton#ViewButton {
+            background-color: #1e1f20;
+            border: 1px solid #3a3b3c;
+            border-radius: 6px;
+        }
+
+        QPushButton#ViewButton:checked {
+            background-color: #0078d7;
+            border: 1px solid #005a9e;
+        }
+
+        QPushButton#ViewButton:hover {
+            background-color: #2d2f31;
+        }
+
+        /* ===== Современная карточка проекта ===== */
+        QFrame#ProjectCardModern {
+            background-color: #242526;
+            border: 2px solid #3a3b3c;
+            border-radius: 12px;
+            min-height: 200px;
+        }
+
+        QFrame#ProjectCardModern:hover {
+            border: 2px solid #0078d7;
+            background-color: #2d2f31;
+        }
+
+        QLabel#ProjectCardTitle {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        QLabel#ProjectCardDesc {
+            color: #b0b3b8;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        QLabel#ProjectCardConfig {
+            color: #8a8d91;
+            font-size: 12px;
+            font-family: 'JetBrains Mono';
+        }
+
+        QLabel#ProjectCardPrice {
+            color: #2e7d32;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono';
+        }
+
+        QPushButton#ProjectCardButton {
+            background-color: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        QPushButton#ProjectCardButton:hover {
+            background-color: #005a9e;
+        }
+
+        /* ===== Страница информации ===== */
+        QWidget#InfoPage {
+            background-color: #18191a;
+        }
+
+        QFrame#InfoCard {
+            background-color: #242526;
+            border: 1px solid #3a3b3c;
+            border-radius: 12px;
+        }
+
+        QLabel#InfoCardTitle {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        QLabel#InfoCardContent {
+            color: #b0b3b8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        QPushButton#FooterInfoButton {
+            background-color: transparent;
+            color: #747474;
+            border: 2px solid #3a3b3c;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+
+        QPushButton#FooterInfoButton:hover {
+            background-color: #2d2f31;
+        }
+
+        #InfoScroll, #InfoContent {
+            background-color: transparent;
+        }
+
+        /* ===== Карточки компонентов на странице проекта ===== */
+        QFrame#ComponentCard {
+            background-color: #242526;
+            border: 2px solid #3a3b3c;
+            border-radius: 12px;
+            min-height: 80px;
+        }
+
+        QFrame#ComponentCard:hover {
+            border: 2px solid #0078d7;
+            background-color: #2d2f31;
+        }
+
+        QLabel#ComponentCardType {
+            color: #8a8d91;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        QLabel#ComponentCardName {
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        QLabel#ComponentCardPrice {
+            color: #00B615;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono';
+            min-width: 100px;
+        }
+
+        QLabel#EmptyComponentLabel {
+            color: #8a8d91;
+            font-size: 14px;
+            font-style: italic;
+            padding: 15px;
+            background-color: #1e1f20;
+            border-radius: 8px;
+        }
+
+        QLabel#SectionHeader {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding-bottom: 10px;
+        }
+
+        /* ===== Кнопки экспорта ===== */
+        QPushButton#ExportButton {
+            background-color: #242526;
+            color: white;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+        }
+
+        QPushButton#ExportButton:hover {
+            background-color: #2d2f31;
+            border: 1px solid #0078d7;
+        }
+
+        QPushButton#ExportButton:pressed {
+            background-color: #1e1f20;
+        }
     """
 
-    # Применяем шрифт Nunito глобально:
     if nunito_family:
         global_styles += f"""
             * {{
@@ -1131,8 +1201,10 @@ if __name__ == "__main__":
     if jetbrains_family:
         global_styles += f"""
             #BlockText, #BigPrice, #ProjectConfig, #ProjectTitle,
-            #DetailsLink, #AlterButton, #ProjectPageTitle, #BlockHeader,
-            #PriceBlockHeader {{
+            #DetailsLink, #ProjectPageTitle, #BlockHeader,
+            #PriceBlockHeader, #StatValue, #MiniProjectPrice,
+            #TotalPriceLabel, #TabTotalPriceLabel, #ConfigRowPrice,
+            #DetailPrice {{
                 font-family: '{jetbrains_family}';
             }}
         """
@@ -1140,5 +1212,6 @@ if __name__ == "__main__":
     app.setStyleSheet(global_styles)
 
     window = PcBuilder()
+    window.setWindowState(Qt.WindowState.WindowMaximized)
     window.show()
     sys.exit(app.exec())

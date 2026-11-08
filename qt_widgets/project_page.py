@@ -1,103 +1,106 @@
 import csv
+from datetime import datetime
 import qtawesome as qta
 from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QScrollArea,
-    QFrame,
-    QPushButton,
-    QLabel,
-    QHBoxLayout,
-    QFileDialog,
-    QMessageBox,
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QFrame, QPushButton,
+    QScrollArea, QFileDialog, QMessageBox,
     QDialog,
 )
-from PyQt6.QtCore import pyqtSignal, Qt, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 
-from qt_widgets.edit_dialog import EditDialog
+
+class ComponentCard(QFrame):
+    """Карточка компонента в конфигурации проекта"""
+
+    open_detail = pyqtSignal(str, str)
+
+    def __init__(
+            self, component_type, component_name,
+            price, icon_name, parent=None,
+    ):
+        super().__init__(parent)
+        self.component_type = component_type
+        self.component_name = component_name
+        self.setObjectName("ComponentCard")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self._build_ui(component_type, component_name, price, icon_name)
+
+    def _build_ui(self, component_type, component_name, price, icon_name):
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(20, 15, 20, 15)
+        layout.setSpacing(15)
+
+        icon = QLabel()
+        icon.setPixmap(
+            qta.icon(icon_name, color="#0078d7").pixmap(QSize(32, 32))
+        )
+        icon.setFixedSize(32, 32)
+        layout.addWidget(icon)
+
+        type_names = {
+            "cpu": "Процессор",
+            "gpu": "Видеокарта",
+            "mat": "Материнская плата",
+            "ram": "Оперативная память",
+            "ssd": "Накопитель (SSD)",
+            "pb": "Блок питания",
+            "case": "Корпус",
+            "cooling": "Охлаждение",
+        }
+        type_label = QLabel(
+            f"{type_names.get(component_type, component_type)}:"
+        )
+        type_label.setObjectName("ComponentCardType")
+        type_label.setMinimumWidth(140)
+        layout.addWidget(type_label)
+
+        name_label = QLabel(component_name)
+        name_label.setObjectName("ComponentCardName")
+        name_label.setWordWrap(True)
+        layout.addWidget(name_label, stretch=1)
+
+        try:
+            price_formatted = f"{int(price):,}₽".replace(",", " ")
+        except Exception:
+            price_formatted = price
+
+        price_label = QLabel(price_formatted)
+        price_label.setObjectName("ComponentCardPrice")
+        layout.addWidget(price_label)
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.open_detail.emit(self.component_type, self.component_name)
+        super().mouseDoubleClickEvent(event)
 
 
 class ProjectPage(QWidget):
-    """
-    Данный класс используется для создания страницы о проекте.
-    """
+    """Страница проекта с конфигурацией"""
 
     go_back = pyqtSignal()
 
-    def __init__(self, project_manager, parent=None):
+    def __init__(self, project_manager, component_manager, parent=None):
         super().__init__(parent)
         self.project_manager = project_manager
+        self.component_manager = component_manager
         self.setObjectName("ProjectPage")
         self.current_project = None
         self._build_ui()
 
     def _build_ui(self):
-        outer_layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(20)
 
-        btn_and_title_layout = QHBoxLayout()
-
-        back_button = QPushButton("<- Назад")
-        back_button.setObjectName("BackButton")
-        back_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        back_button.setFixedSize(100, 30)
-        back_button.clicked.connect(self.go_back.emit)
-        btn_and_title_layout.addWidget(
-            back_button, alignment=Qt.AlignmentFlag.AlignLeft
-        )
-
-        title_and_editbtn = QHBoxLayout()
+        top_panel = self._build_top_panel()
+        main_layout.addWidget(top_panel)
 
         self.title_label = QLabel()
         self.title_label.setObjectName("ProjectPageTitle")
         self.title_label.setWordWrap(True)
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        title_edit_btn = QPushButton()
-        title_edit_btn.setIcon(qta.icon("fa6s.pen", color="white"))
-        title_edit_btn.setIconSize(QSize(14, 14))
-        title_edit_btn.setFixedSize(30, 30)
-        title_edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        title_edit_btn.clicked.connect(self.edit_the_project_title)
-        title_edit_btn.setObjectName("EditButton")
-
-        delete_project_btn = QPushButton()
-        delete_project_btn.setIcon(qta.icon("fa6s.trash", color="red"))
-        delete_project_btn.setIconSize(QSize(16, 16))
-        delete_project_btn.setFixedSize(30, 30)
-        delete_project_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        delete_project_btn.clicked.connect(self.delete_the_project_title)
-        delete_project_btn.setObjectName("DeleteButton")
-
-        title_and_editbtn.addWidget(self.title_label)
-        title_and_editbtn.addWidget(title_edit_btn)
-        title_and_editbtn.addWidget(delete_project_btn)
-
-        btn_and_title_layout.addLayout(title_and_editbtn)
-
-        export_container = QFrame()
-        export_container.setFixedSize(200, 50)
-        export_layout = QHBoxLayout(export_container)
-        export_layout.setSpacing(6)
-        export_layout.addStretch()
-
-        csv_button = QPushButton("CSV")
-        csv_button.setObjectName("ExportButton")
-        csv_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        csv_button.setFixedSize(60, 30)
-        csv_button.clicked.connect(self.export_to_csv)
-
-        txt_button = QPushButton("TXT")
-        txt_button.setObjectName("ExportButton")
-        txt_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        txt_button.setFixedSize(60, 30)
-        txt_button.clicked.connect(self.export_to_txt)
-
-        export_layout.addWidget(csv_button)
-        export_layout.addWidget(txt_button)
-
-        btn_and_title_layout.addWidget(export_container)
-
-        outer_layout.addLayout(btn_and_title_layout)
+        main_layout.addWidget(self.title_label)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -106,171 +109,292 @@ class ProjectPage(QWidget):
 
         content = QWidget()
         content.setObjectName("ProjectContent")
-        layout = QVBoxLayout(content)
-        layout.setSpacing(20)
-
-        desc_frame = QFrame()
-        desc_frame.setObjectName("InfoBlock")
-        desc_layout = QVBoxLayout(desc_frame)
-        desc_layout.setSpacing(8)
-
-        desc_and_editbtn = QHBoxLayout()
-
-        desc_header = QLabel("Описание")
-        desc_header.setObjectName("BlockHeader")
-
-        desc_edit_btn = QPushButton()
-        desc_edit_btn.setIcon(qta.icon("fa6s.pen", color="black"))
-        desc_edit_btn.setIconSize(QSize(14, 14))
-        desc_edit_btn.setFixedSize(30, 30)
-        desc_edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        desc_edit_btn.clicked.connect(self.edit_the_project_desc)
-        desc_edit_btn.setObjectName("EditButton")
-
-        desc_and_editbtn.addWidget(desc_header)
-        desc_and_editbtn.addWidget(desc_edit_btn)
-
-        desc_layout.addLayout(desc_and_editbtn)
-
-        self.desc_label = QLabel()
-        self.desc_label.setObjectName("BlockText")
-        self.desc_label.setWordWrap(True)
-        desc_layout.addWidget(self.desc_label)
-
-        layout.addWidget(desc_frame)
-
-        config_frame = QFrame()
-        config_frame.setObjectName("InfoBlock")
-        config_layout = QVBoxLayout(config_frame)
-        config_layout.setSpacing(8)
-
-        config_and_editbtn = QHBoxLayout()
-
-        config_header = QLabel("Конфигурация:")
-        config_header.setObjectName("BlockHeader")
-
-        config_edit_btn = QPushButton()
-        config_edit_btn.setIcon(qta.icon("fa6s.pen", color="black"))
-        config_edit_btn.setIconSize(QSize(14, 14))
-        config_edit_btn.setFixedSize(30, 30)
-        config_edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        config_edit_btn.clicked.connect(self.edit_the_project_config)
-        config_edit_btn.setObjectName("EditButton")
-
-        config_and_editbtn.addWidget(config_header)
-        config_and_editbtn.addWidget(config_edit_btn)
-
-        config_layout.addLayout(config_and_editbtn)
-
-        self.config_label = QLabel()
-        self.config_label.setObjectName("BlockText")
-        self.config_label.setWordWrap(True)
-        config_layout.addWidget(self.config_label)
-
-        layout.addWidget(config_frame)
-
-        price_frame = QFrame()
-        price_frame.setObjectName("PriceBlock")
-        price_layout = QVBoxLayout(price_frame)
-        price_layout.setSpacing(8)
-
-        price_header = QLabel("Стоимость:")
-        price_header.setObjectName("PriceBlockHeader")
-        price_layout.addWidget(price_header)
-
-        self.price_label = QLabel()
-        self.price_label.setObjectName("BigPrice")
-        price_layout.addWidget(self.price_label)
-        price_layout.addStretch()
-
-        layout.addWidget(price_frame)
+        self.content_layout = QVBoxLayout(content)
+        self.content_layout.setSpacing(15)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
 
         scroll.setWidget(content)
-        outer_layout.addWidget(scroll)
+        main_layout.addWidget(scroll, stretch=1)
+
+    def _build_top_panel(self):
+        panel = QFrame()
+        panel.setObjectName("TopPanel")
+        layout = QHBoxLayout(panel)
+        layout.setContentsMargins(20, 15, 20, 15)
+        layout.setSpacing(15)
+
+        back_button = QPushButton()
+        back_button.setIcon(qta.icon("fa6s.arrow-left", color="white"))
+        back_button.setIconSize(QSize(20, 20))
+        back_button.setObjectName("BackButton")
+        back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_button.setFixedSize(44, 44)
+        back_button.clicked.connect(self.go_back.emit)
+        layout.addWidget(back_button)
+
+        layout.addStretch()
+
+        export_csv_btn = QPushButton()
+        export_csv_btn.setIcon(qta.icon("fa6s.file-csv", color="white"))
+        export_csv_btn.setIconSize(QSize(20, 20))
+        export_csv_btn.setObjectName("ExportButton")
+        export_csv_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        export_csv_btn.setFixedSize(44, 44)
+        export_csv_btn.setToolTip("Экспорт в CSV")
+        export_csv_btn.clicked.connect(self.export_to_csv)
+        layout.addWidget(export_csv_btn)
+
+        export_txt_btn = QPushButton()
+        export_txt_btn.setIcon(qta.icon("fa6s.file-lines", color="white"))
+        export_txt_btn.setIconSize(QSize(20, 20))
+        export_txt_btn.setObjectName("ExportButton")
+        export_txt_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        export_txt_btn.setFixedSize(44, 44)
+        export_txt_btn.setToolTip("Экспорт в TXT")
+        export_txt_btn.clicked.connect(self.export_to_txt)
+        layout.addWidget(export_txt_btn)
+
+        edit_btn = QPushButton("Редактировать конфигурацию")
+        edit_btn.setObjectName("ActionButton")
+        edit_btn.setIcon(qta.icon("fa6s.pen", color="white"))
+        edit_btn.setIconSize(QSize(20, 20))
+        edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_btn.clicked.connect(self.edit_the_project_config)
+        layout.addWidget(edit_btn)
+
+        return panel
 
     def load_project(self, project_data):
+        """Загружает данные проекта на страницу"""
         self.current_project = project_data
+        self.title_label.setText(f"Проект «{project_data["name"]}»")
 
-        self.title_label.setText(f"Проект: {project_data['name']}")
-        self.desc_label.setText(project_data["description"])
-        self.config_label.setText(
-            f"<b>Процессор:</b> {project_data['config']['cpu']}<br>"
-            f"<b>Материнская плата:</b> {project_data['config']['mat']}<br>"
-            f"<b>Блок питания:</b> {project_data['config']['pb']}<br>"
-            f"<b>Видеокарта:</b> {project_data['config']['gpu']}<br>"
-            f"<b>Оперативная память:</b> {project_data['config']['ram']}<br>"
-            f"<b>Накопитель (SSD):</b> {project_data['config']['ssd']}<br>"
-            f"<b>Корпус:</b> {project_data['config']['case']}<br>"
-            f"<b>Охлаждение:</b> {project_data['config']['cooling']}<br>"
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        section_header = QLabel("Конфигурация")
+        section_header.setObjectName("SectionHeader")
+        self.content_layout.addWidget(section_header)
+
+        config = project_data.get("config", {})
+        components = [
+            ("cpu", config.get("cpu", "Не указано"), "fa6s.microchip"),
+            ("gpu", config.get("gpu", "Не указано"), "fa6s.display"),
+            ("mat", config.get("mat", "Не указано"), "fa6s.server"),
+            ("ram", config.get("ram", "Не указано"), "fa6s.memory"),
+            ("ssd", config.get("ssd", "Не указано"), "fa6s.hard-drive"),
+            ("pb", config.get("pb", "Не указано"), "fa6s.bolt"),
+            ("case", config.get("case", "Не указано"), "fa6s.box"),
+            ("cooling", config.get("cooling", "Не указано"), "fa6s.fan"),
+        ]
+
+        for comp_type, comp_name, icon_name in components:
+            if comp_name and comp_name != "Не указано":
+                price = self._get_component_price(comp_type, comp_name)
+
+                card = ComponentCard(comp_type, comp_name, price, icon_name)
+                card.open_detail.connect(self._show_component_detail)
+                self.content_layout.addWidget(card)
+            else:
+                empty_card = QLabel(f"{comp_type.upper()}: Не выбрано")
+                empty_card.setObjectName("EmptyComponentLabel")
+                self.content_layout.addWidget(empty_card)
+
+        total_price = project_data.get("price", "0")
+        try:
+            price_formatted = f"{int(total_price):,}₽".replace(",", " ")
+        except Exception:
+            price_formatted = total_price
+
+        price_block = QFrame()
+        price_block.setObjectName("PriceBlock")
+        price_layout = QHBoxLayout(price_block)
+        price_layout.setContentsMargins(20, 20, 20, 20)
+
+        icon = QLabel()
+        icon.setPixmap(
+            qta.icon("fa6s.ruble-sign", color="#2e7d32").pixmap(QSize(32, 32))
         )
-        self.price_label.setText(str(project_data["price"]))
+        price_layout.addWidget(icon)
+
+        label = QLabel("Итоговая стоимость:")
+        label.setObjectName("PriceBlockHeader")
+        price_layout.addWidget(label)
+
+        price_layout.addStretch()
+
+        price_label = QLabel(price_formatted)
+        price_label.setObjectName("BigPrice")
+        price_layout.addWidget(price_label)
+
+        self.content_layout.addWidget(price_block)
+        self.content_layout.addStretch()
+
+    def _get_component_price(self, component_type, component_name):
+        """Ищет цену компонента в БД по названию"""
+        try:
+            components = self.component_manager.get_all(component_type)
+            for cid, comp in components.items():
+                if comp["name"] == component_name:
+                    return comp.get("price", "0")
+        except Exception:
+            pass
+        return "0"
+
+    def _show_component_detail(self, component_type, component_name):
+        """Открывает диалог с характеристиками компонента"""
+        # Ищем компонент в БД
+        try:
+            components = self.component_manager.get_all(component_type)
+            comp_data = None
+            for cid, comp in components.items():
+                if comp["name"] == component_name:
+                    comp_data = comp
+                    break
+
+            if comp_data:
+                from qt_widgets.component_detail_dialog import (
+                    ComponentDetailDialog
+                )
+
+                dialog = ComponentDetailDialog(
+                    component_data=comp_data,
+                    component_type=component_type,
+                    component_manager=self.component_manager,
+                    parent=self
+                )
+                dialog.exec()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Внимание",
+                    f"Компонент '{component_name}' не найден в базе данных."
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось открыть характеристики:\n{e}"
+            )
+
+    def edit_the_project_config(self):
+        """Открывает диалог редактирования конфигурации"""
+        if not self.current_project:
+            return
+
+        from qt_widgets.config_dialog import ConfigDialog
+
+        config_dialog = ConfigDialog(
+            project_name=self.current_project["name"],
+            component_manager=self.component_manager,
+            initial_data=self.current_project.get("config", {}),
+            parent=self
+        )
+
+        if config_dialog.exec() == QDialog.DialogCode.Accepted:
+            new_config_data = config_dialog.get_config_data()
+
+            project_id = self.current_project["id"]
+            self.project_manager.update_project(
+                project_id,
+                {
+                    "config": {
+                        "cpu": new_config_data["cpu"],
+                        "mat": new_config_data["mat"],
+                        "pb": new_config_data["pb"],
+                        "gpu": new_config_data["gpu"],
+                        "ram": new_config_data["ram"],
+                        "ssd": new_config_data["ssd"],
+                        "case": new_config_data["case"],
+                        "cooling": new_config_data["cooling"],
+                    },
+                    "price": new_config_data.get("price", "0")
+                }
+            )
+
+            self.current_project["config"] = new_config_data
+            self.current_project["price"] = new_config_data.get("price", "0")
+
+            self.load_project(self.current_project)
+            QMessageBox.information(self, "Успех", "Конфигурация обновлена!")
 
     def export_to_csv(self):
+        """Экспорт конфигурации в CSV"""
         if not self.current_project:
             return
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Сохранить проект в CSV",
+            "Сохранить в CSV",
             f"{self.current_project['name']}.csv",
-            "CSV файлы (*.csv)",
+            "CSV файлы (*.csv)"
         )
 
         if not file_path:
             return
 
         try:
-            headers = [
-                "id",
-                "name",
-                "description",
-                "price",
-                "cpu",
-                "mat",
-                "pb",
-                "gpu",
-                "ram",
-                "ssd",
-                "case",
-                "cooling",
-            ]
+            with open(file_path, "w", encoding="utf-8-sig", newline="") as f:
+                writer = csv.writer(f, delimiter=";")
 
-            values = [
-                self.current_project["id"],
-                self.current_project["name"],
-                self.current_project["description"],
-                self.current_project["price"],
-                self.current_project["config"]["cpu"],
-                self.current_project["config"]["mat"],
-                self.current_project["config"]["pb"],
-                self.current_project["config"]["gpu"],
-                self.current_project["config"]["ram"],
-                self.current_project["config"]["ssd"],
-                self.current_project["config"]["case"],
-                self.current_project["config"]["cooling"],
-            ]
+                # Заголовки
+                writer.writerow(["Параметр", "Значение"])
 
-            with open(file_path, "w", encoding="utf8", newline="") as file:
-                writer = csv.writer(file, delimiter=";")
-                writer.writerow(headers)
-                writer.writerow(values)
+                # Основные данные
+                writer.writerow(
+                    ["Название проекта", self.current_project["name"]]
+                )
+                writer.writerow(
+                    ["Описание", self.current_project.get("description", "")]
+                )
+                writer.writerow(
+                    ["Итоговая цена", self.current_project.get("price", "0")]
+                )
+                writer.writerow([])
+
+                writer.writerow(["Компонент", "Модель"])
+                config = self.current_project.get("config", {})
+
+                component_names = {
+                    "cpu": "Процессор",
+                    "gpu": "Видеокарта",
+                    "mat": "Материнская плата",
+                    "ram": "Оперативная память",
+                    "ssd": "Накопитель (SSD)",
+                    "pb": "Блок питания",
+                    "case": "Корпус",
+                    "cooling": "Охлаждение",
+                }
+
+                for key, name in component_names.items():
+                    value = config.get(key, "Не указано")
+                    writer.writerow([name, value])
 
             QMessageBox.information(
-                self, "Успех", f"Проект сохранён в:\n{file_path}"
+                self,
+                "Успех",
+                f"Конфигурация сохранена в:\n{file_path}"
             )
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить:\n{e}")
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось сохранить файл:\n{e}"
+            )
 
     def export_to_txt(self):
+        """Экспорт конфигурации в TXT"""
         if not self.current_project:
             return
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Сохранить проект в TXT",
+            "Сохранить в TXT",
             f"{self.current_project['name']}.txt",
-            "TXT файлы (*.txt)",
+            "TXT файлы (*.txt)"
         )
 
         if not file_path:
@@ -278,107 +402,40 @@ class ProjectPage(QWidget):
 
         try:
             p = self.current_project
+            config = p.get("config", {})
 
-            content = (
-                f"=== Проект: {p['name']} ===\n\n"
-                f"Описание:\n{p['description']}\n\n"
-                f"Конфигурация:\n"
-                f"  - Процессор: {p['config']['cpu']}\n"
-                f"  - Видеокарта: {p['config']['gpu']}\n"
-                f"  - Материнская плата: {p['config']['mat']}\n"
-                f"  - Блок питания: {p['config']['pb']}\n"
-                f"  - Оперативная память: {p['config']['ram']}\n"
-                f"  - SSD: {p['config']['ssd']}\n"
-                f"  - Корпус: {p['config']['case']}\n"
-                f"  - Охлаждение: {p['config']['cooling']}\n"
-                f"\nСтоимость: {p['price']} руб.\n"
-            )
+            content = f"""=== Проект: {p['name']} ===
 
-            with open(file_path, "w", encoding="utf8") as file:
-                file.write(content)
+    Описание:
+    {p.get('description', 'Не указано')}
+
+    Конфигурация:
+    • Процессор: {config.get('cpu', 'Не указано')}
+    • Видеокарта: {config.get('gpu', 'Не указано')}
+    • Материнская плата: {config.get('mat', 'Не указано')}
+    • Оперативная память: {config.get('ram', 'Не указано')}
+    • Накопитель (SSD): {config.get('ssd', 'Не указано')}
+    • Блок питания: {config.get('pb', 'Не указано')}
+    • Корпус: {config.get('case', 'Не указано')}
+    • Охлаждение: {config.get('cooling', 'Не указано')}
+
+    Итоговая стоимость: {p.get('price', '0')} руб.
+
+    Дата экспорта: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+    """
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
 
             QMessageBox.information(
-                self, "Успех", f"Проект успешно сохранён в:\n{file_path}"
+                self,
+                "Успех",
+                f"Конфигурация сохранена в:\n{file_path}"
             )
+
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить:\n{e}")
-
-    def edit_the_project_title(self):
-        if not self.current_project:
-            return
-
-        old_name = self.current_project["name"]
-
-        dialog = EditDialog(
-            title="Редактировать название",
-            label_text="Введите новое название проекта:",
-            initial_text=old_name,
-            parent=self,
-        )
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            new_name = dialog.get_text()
-
-            if new_name.strip():
-                project_id = self.current_project["id"]
-
-                self.project_manager.update_project(
-                    project_id, {"name": new_name}
-                )
-
-                self.current_project["name"] = new_name
-                self.title_label.setText(new_name)
-
-                if old_name != new_name:
-                    QMessageBox.information(
-                        self, "Успех", "Название обновлено!"
-                    )
-
-    def edit_the_project_desc(self):
-        if not self.current_project:
-            return
-
-        old_desc = self.current_project["description"]
-
-        dialog = EditDialog(
-            title="Редактировать описание",
-            label_text="Введите новое описание проекта:",
-            initial_text=old_desc,
-            parent=self,
-        )
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            new_desc = dialog.get_text()
-
-            if new_desc.strip():
-                project_id = self.current_project["id"]
-
-                self.project_manager.update_project(
-                    project_id, {"description": new_desc}
-                )
-
-                self.current_project["description"] = new_desc
-                self.desc_label.setText(new_desc)
-
-                if new_desc != old_desc:
-                    QMessageBox.information(
-                        self, "Успех", "Описание обновлено!"
-                    )
-
-    def edit_the_project_config(self):
-        pass
-
-    def delete_the_project_title(self):
-        reply = QMessageBox.question(
-            self,
-            "Подтверждение",
-            f"Удалить проект {self.current_project['name']}?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-
-        if reply == QMessageBox.StandardButton.Yes:
-            project_id = self.current_project["id"]
-            self.project_manager.delete_project(project_id)
-
-            self.go_back.emit()
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось сохранить файл:\n{e}"
+            )
