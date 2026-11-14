@@ -213,12 +213,6 @@ class ProjectPage(QWidget):
         price_layout = QHBoxLayout(price_block)
         price_layout.setContentsMargins(20, 20, 20, 20)
 
-        icon = QLabel()
-        icon.setPixmap(
-            qta.icon("fa6s.ruble-sign", color="#2e7d32").pixmap(QSize(32, 32))
-        )
-        price_layout.addWidget(icon)
-
         label = QLabel("Итоговая стоимость:")
         label.setObjectName("PriceBlockHeader")
         price_layout.addWidget(label)

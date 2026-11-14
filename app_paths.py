@@ -50,3 +50,21 @@ def ensure_projects_file() -> Path:
             json.dump({}, f, ensure_ascii=False, indent=2)
 
     return path
+
+
+def get_font_path(font_name: str) -> str:
+    """Возвращает полный путь к файлу шрифта в виде строки для QFontDatabase"""
+    if getattr(sys, 'frozen', False):
+        base_path = Path(sys._MEIPASS)
+    else:
+        base_path = Path(__file__).parent
+
+    return str(base_path / "fonts" / font_name)
+
+
+def get_icon_path() -> Path:
+    if getattr(sys, 'frozen', False):
+        base_path = Path(sys._MEIPASS)
+    else:
+        base_path = Path(__file__).parent
+    return base_path / "assets" / "icon.ico"

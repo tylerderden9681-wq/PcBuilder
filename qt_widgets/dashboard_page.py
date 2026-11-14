@@ -437,11 +437,18 @@ class DashboardPage(QWidget):
             )[:6]
 
             for i, (pid, pdata) in enumerate(sorted_projects):
+                full_name = pdata["name"]
+
+                if len(full_name) > 11:
+                    project_name = f"{full_name[:11]}..."
+                else:
+                    project_name = full_name
+
                 row = i // 3
                 col = i % 3
                 card = ProjectCardMini(
                     pid,
-                    pdata["name"],
+                    project_name,
                     pdata.get("price", "0")
                 )
                 card.open_project.connect(self.open_project.emit)

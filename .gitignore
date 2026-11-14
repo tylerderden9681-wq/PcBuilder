@@ -35,10 +35,6 @@ desktop.ini
 # ============ ЛОГИ ============
 *.log
 
-# ============ БАЗЫ ДАННЫХ (если появятся) ============
-*.sqlite
-*.sqlite3
-
 projects.json
 compatibility.py
 
