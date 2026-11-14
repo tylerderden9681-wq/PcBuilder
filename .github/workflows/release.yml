@@ -1,0 +1,45 @@
+name: Build PCBuilder Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Скачивание вашего кода
+        uses: actions/checkout@v4
+
+      - name: Установка Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Установка зависимостей
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Сборка .exe файла
+        run: |
+          pyinstaller --noconfirm --onefile --windowed ^
+            --icon="assets/icon.ico" ^
+            --add-data "fonts;fonts" ^
+            --add-data "data/dependencies.db;data" ^
+            --add-data "assets;assets" ^
+            --name "PCBuilder" ^
+            main.py
+
+      - name: Создание черновика релиза
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PCBuilder.exe
+          draft: true
+          generate_release_notes: true

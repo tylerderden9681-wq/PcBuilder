@@ -1,9 +1,6 @@
-packaging==26.3
 PyQt6==6.11.0
 PyQt6-Qt6==6.11.2
 PyQt6_sip==13.13.0
 python-dateutil==2.9.0.post0
 QtAwesome==1.4.2
 QtPy==2.4.3
-six==1.17.0
-tzdata==2026.5

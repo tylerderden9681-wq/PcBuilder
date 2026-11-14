@@ -19,17 +19,24 @@ class CreateProjectDialog(QDialog):
         layout.setSpacing(15)
         layout.setContentsMargins(20, 20, 20, 20)
 
-        title_label = QLabel("Новый проект")
+        title_label = QLabel("Создайте свой новый проект")
         title_label.setObjectName("DialogTitle")
+        title_label.setAlignment(
+            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
+        )
         layout.addWidget(title_label)
 
-        layout.addWidget(QLabel("Название проекта:"))
+        project_name_input = QLabel("Название проекта:")
+        project_name_input.setObjectName("ProjectNameInputLabel")
+        layout.addWidget(project_name_input)
         self.name_input = QLineEdit()
         self.name_input.setObjectName("DialogInput")
         self.name_input.setPlaceholderText("Например: Игровой ПК за 100к")
         layout.addWidget(self.name_input)
 
-        layout.addWidget(QLabel("Описание:"))
+        project_desc_input = QLabel("Описание:")
+        project_desc_input.setObjectName("ProjectDescInputLabel")
+        layout.addWidget(project_desc_input)
         self.desc_input = QTextEdit()
         self.desc_input.setObjectName("DialogInput")
         self.desc_input.setPlaceholderText(

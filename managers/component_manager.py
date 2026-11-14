@@ -1,5 +1,6 @@
 import sqlite3
-from pathlib import Path
+
+from app_paths import get_db_path
 
 TABLE_MAP = {
     "cpu": "processors",
@@ -16,8 +17,8 @@ TABLE_MAP = {
 class ComponentManager:
     """Менеджер для работы с базой комплектующих (SQLite)"""
 
-    def __init__(self, db_path="data/dependencies.db"):
-        self.db_path = Path(db_path)
+    def __init__(self, db_path=None):
+        self.db_path = db_path or get_db_path()
         self.conn = None
         self._connect()
 
