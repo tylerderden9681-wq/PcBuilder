@@ -167,7 +167,7 @@ class ProjectPage(QWidget):
     def load_project(self, project_data):
         """Загружает данные проекта на страницу"""
         self.current_project = project_data
-        self.title_label.setText(f"Проект «{project_data["name"]}»")
+        self.title_label.setText(f"Проект «{project_data['name']}»")
 
         while self.content_layout.count():
             item = self.content_layout.takeAt(0)
