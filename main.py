@@ -1,8 +1,12 @@
 import sys
 from PyQt6.QtGui import QFontDatabase, QIcon
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow,
-    QVBoxLayout, QStackedWidget, QDialog
+    QApplication,
+    QWidget,
+    QMainWindow,
+    QVBoxLayout,
+    QStackedWidget,
+    QDialog,
 )
 from PyQt6.QtCore import Qt
 
@@ -32,25 +36,25 @@ class PcBuilder(QMainWindow):
         self.stack = QStackedWidget()
         main_layout.addWidget(self.stack)
 
-        # Страница 0: Дашборд
         self.dashboard_page = DashboardPage(self.project_manager)
         self.dashboard_page.open_project.connect(self.open_project_page)
         self.dashboard_page.create_project.connect(self.create_new_project)
         self.dashboard_page.view_all_projects.connect(self.show_all_projects)
         self.stack.addWidget(self.dashboard_page)
 
-        # Страница 1: Все проекты
         self.projects_list_page = ProjectsListPage(self.project_manager)
         self.projects_list_page.open_project.connect(self.open_project_page)
         self.projects_list_page.go_back.connect(self.show_dashboard)
         self.projects_list_page.create_project.connect(self.create_new_project)
         self.stack.addWidget(self.projects_list_page)
 
-        # Страница 2: Детали проекта
         self.project_page = ProjectPage(
-            self.project_manager, self.component_manager
+            self.project_manager,
+            self.component_manager
         )
         self.project_page.go_back.connect(self.show_dashboard)
+        self.project_page.project_deleted.connect(self._on_project_deleted)
+        self.project_page.project_renamed.connect(self._on_project_renamed)
         self.stack.addWidget(self.project_page)
 
         self.stack.setCurrentIndex(0)
@@ -79,10 +83,9 @@ class PcBuilder(QMainWindow):
 
         basic_data = create_dialog.get_data()
         config_dialog = ConfigDialog(
-            basic_data["name"],
-            self.component_manager,
-            parent=self
+            basic_data["name"], self.component_manager, parent=self
         )
+
         config_dialog.exec()
         config_data = config_dialog.get_config_data()
 
@@ -107,32 +110,41 @@ class PcBuilder(QMainWindow):
         self.show_dashboard()
         self.open_project_page(new_id)
 
+    def _on_project_deleted(self, project_id: str):
+        """Обработчик удаления проекта"""
+        print(f"Проект {project_id} удалён")
+
+    def _on_project_renamed(self, project_id: str, new_name: str):
+        """Обработчик переименования проекта"""
+        print(f"Проект {project_id} переименован в '{new_name}'")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # Загрузка шрифтов
     nunito_id = QFontDatabase.addApplicationFont(get_font_path("Nunito.ttf"))
     jetbrains_id = QFontDatabase.addApplicationFont(
         get_font_path("JetBrainsMono.ttf"),
     )
 
-    nunito_family = QFontDatabase.applicationFontFamilies(
-        nunito_id
-    )[0] if nunito_id != -1 else ""
-    jetbrains_family = QFontDatabase.applicationFontFamilies(
-        jetbrains_id
-    )[0] if jetbrains_id != -1 else ""
+    nunito_family = (
+        QFontDatabase.applicationFontFamilies(
+            nunito_id
+        )[0] if nunito_id != -1 else ""
+    )
+    jetbrains_family = (
+        QFontDatabase.applicationFontFamilies(jetbrains_id)[0]
+        if jetbrains_id != -1
+        else ""
+    )
 
     if not nunito_family:
         print("Ошибка: не удалось загрузить шрифт Nunito!")
     if not jetbrains_family:
         print("Ошибка: не удалось загрузить шрифт JetBrainsMono")
 
-    # Применение стилей через вынесенную функцию
     app.setStyleSheet(get_stylesheet(nunito_family, jetbrains_family))
 
-    # Ставим иконку
     app.setWindowIcon(QIcon(str(get_icon_path())))
 
     window = PcBuilder()

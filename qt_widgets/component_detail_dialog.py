@@ -221,7 +221,7 @@ class ComponentDetailDialog(QDialog):
 
         for key in [
             "brand", "generation", "chipset",
-            "type", "size_type", "color"
+            "type", "size_type", "color",
         ]:
             if key in self.component_data:
                 groups["Основные характеристики"].append(key)
@@ -318,8 +318,7 @@ class ComponentDetailDialog(QDialog):
             try:
                 icon_label.setPixmap(
                     qta.icon(
-                        "fa6s.circle", color="#8a8d91"
-                    ).pixmap(QSize(16, 16))
+                        "fa6s.circle", color="#8a8d91").pixmap(QSize(16, 16))
                 )
             except Exception:
                 pass
