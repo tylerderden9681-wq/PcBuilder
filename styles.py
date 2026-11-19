@@ -1,5 +1,6 @@
 # styles.py
 
+
 def get_stylesheet(nunito_family: str = "", jetbrains_family: str = "") -> str:
     """
     Возвращает полный CSS-стиль для приложения с учетом загруженных шрифтов.
@@ -803,6 +804,202 @@ def get_stylesheet(nunito_family: str = "", jetbrains_family: str = "") -> str:
         QScrollArea#ProjectsScroll > QWidget >
         QScrollBar::handle:vertical:hover {
             background-color: #0078d7;
+        }
+
+        /* ===== Панель совместимости ===== */
+        QFrame#CompatibilityPanel {
+            background-color: #2a1f1f;
+            border: 2px solid #dc3545;
+            margin: 10px 0;
+        }
+
+        QLabel#CompatibilityHeader[status="error"] {
+            color: #dc3545;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        QLabel#CompatibilityHeader[status="warning"] {
+            color: #ff9800;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        QFrame#IssueError {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid #dc3545;
+        }
+
+        QFrame#IssueWarning {
+            background-color: rgba(255, 152, 0, 0.1);
+            border: 1px solid #ff9800;
+        }
+
+        QLabel#IssueText {
+            color: white;
+            font-size: 13px;
+            padding: 2px 0;
+        }
+
+        /* ===== Состояние кнопки сохранения ===== */
+        QPushButton#SaveButton:disabled {
+            background-color: #3a3b3c;
+            color: #8a8d91;
+            border: 1px solid #2d2f31;
+        }
+
+        QPushButton#SaveButton:disabled:hover {
+            background-color: #3a3b3c;
+            cursor: default;
+        }
+
+        /* ===== Страница справки ===== */
+        QWidget#HelpPage {
+            background-color: #18191a;
+        }
+
+        QFrame#HelpTocFrame {
+            background-color: #242526;
+            border: 1px solid #3a3b3c;
+            border-radius: 10px;
+            margin-right: 15px;
+        }
+
+        QLabel#HelpTocTitle {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3b3c;
+            margin-bottom: 10px;
+        }
+
+        QPushButton#HelpTocButton {
+            background-color: transparent;
+            color: #b0b3b8;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        QPushButton#HelpTocButton:hover {
+            background-color: #2d2f31;
+            color: #0078d7;
+        }
+
+        QPushButton#HelpTocButton:pressed {
+            background-color: #1e1f20;
+        }
+
+        QTextBrowser#HelpTextBrowser {
+            background-color: #242526;
+            color: #e0e0e0;
+            border: 1px solid #3a3b3c;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        QTextBrowser#HelpTextBrowser a {
+            color: #0078d7;
+            text-decoration: none;
+        }
+
+        QTextBrowser#HelpTextBrowser a:hover {
+            color: #4dc8ff;
+            text-decoration: underline;
+        }
+
+        /* Приветственный диалог */
+        QFrame#WelcomeDialog {
+            background-color: #242526;
+            border: 2px solid #0078d7;
+            border-radius: 12px;
+            max-width: 500px;
+        }
+
+        QLabel#WelcomeDialogTitle {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px 0;
+        }
+
+        QLabel#WelcomeDialogPoint {
+            color: #b0b3b8;
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        QPushButton#DontShowButton {
+            background-color: transparent;
+            color: #8a8d91;
+            border: 1px solid #3a3b3c;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        QPushButton#DontShowButton:checked {
+            background-color: #0078d7;
+            color: white;
+            border: 1px solid #005a9e;
+        }
+
+        /* Выбранный компонент в списке */
+        QListWidget#ComponentList::item:selected {
+            background-color: rgba(0, 120, 215, 0.2);
+            border: 2px solid #0078d7;
+        }
+
+        QListWidget#ComponentList::item:selected QLabel#ComponentName {
+            color: #0078d7;
+            font-weight: bold;
+        }
+
+        /* ===== Редактируемый заголовок проекта ===== */
+        QLineEdit#ProjectTitleEdit {
+            background-color: #242526;
+            color: white;
+            border: 2px solid #0078d7;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        QLineEdit#ProjectTitleEdit:focus {
+            border: 2px solid #4dc8ff;
+            background-color: #2d2f31;
+        }
+
+        QPushButton#TitleEditButton {
+            background-color: transparent;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+        }
+
+        QPushButton#TitleEditButton:hover {
+            background-color: #2d2f31;
+            border: 1px solid #0078d7;
+        }
+
+        /* ===== Кнопка удаления проекта ===== */
+        QPushButton#DeleteProjectButton {
+            background-color: #dc3545;
+            border: none;
+            border-radius: 8px;
+        }
+
+        QPushButton#DeleteProjectButton:hover {
+            background-color: #c82333;
+        }
+
+        QPushButton#DeleteProjectButton:pressed {
+            background-color: #bd2130;
         }
     """
 

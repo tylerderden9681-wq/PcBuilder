@@ -36,7 +36,6 @@ desktop.ini
 *.log
 
 projects.json
-compatibility.py
 
 # ============ ВРЕМЕННЫЕ ФАЙЛЫ ============
 *.tmp

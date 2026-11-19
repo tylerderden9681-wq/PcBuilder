@@ -50,9 +50,7 @@ class ComponentManager:
         """Получает конкретный компонент по типу и ID"""
         table = self._get_table(component_type)
         cursor = self.conn.cursor()
-        cursor.execute(
-            f"SELECT * FROM {table} WHERE id = ?", (component_id,)
-        )
+        cursor.execute(f"SELECT * FROM {table} WHERE id = ?", (component_id,))
         row = cursor.fetchone()
         return dict(row) if row else None
 

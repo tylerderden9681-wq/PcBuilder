@@ -1,0 +1,4 @@
+-r prod.txt
+
+flake8==7.5.0
+black==26.10.1

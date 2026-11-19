@@ -20,7 +20,7 @@ def get_projects_path() -> Path:
     При разработке — из папки data/ проекта.
     При запуске из .exe — из домашней директории пользователя.
     """
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         return get_app_dir() / "projects.json"
     else:
         return Path(__file__).parent / "data" / "projects.json"
@@ -32,7 +32,7 @@ def get_db_path() -> Path:
     При запуске из .exe — берём из временной папки PyInstaller.
     При запуске как скрипт — из папки data/ проекта.
     """
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         base_path = Path(sys._MEIPASS)
     else:
         base_path = Path(__file__).parent
@@ -54,7 +54,7 @@ def ensure_projects_file() -> Path:
 
 def get_font_path(font_name: str) -> str:
     """Возвращает полный путь к файлу шрифта в виде строки для QFontDatabase"""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         base_path = Path(sys._MEIPASS)
     else:
         base_path = Path(__file__).parent
@@ -63,7 +63,7 @@ def get_font_path(font_name: str) -> str:
 
 
 def get_icon_path() -> Path:
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         base_path = Path(sys._MEIPASS)
     else:
         base_path = Path(__file__).parent

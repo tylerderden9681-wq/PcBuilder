@@ -1,19 +1,33 @@
 import qtawesome as qta
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton,
-    QWidget, QFrame, QMessageBox,
-    QListWidget, QListWidgetItem, QTabWidget,
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QWidget,
+    QFrame,
+    QMessageBox,
+    QListWidget,
+    QListWidgetItem,
+    QTabWidget,
     QAbstractItemView,
 )
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QSize
 
+from qt_widgets.compability_panel import CompatibilityPanel
+from managers.compatibility import CompatibilityChecker
+
 
 class ComponentItemWidget(QWidget):
     """Кастомный виджет для отображения компонента в списке"""
 
-    def __init__(self, name, price, specs=None, parent=None):
+    def __init__(
+            self, name, price,
+            specs=None, is_selected=False, parent=None
+    ):
         super().__init__(parent)
         self.setObjectName("ComponentItem")
 
@@ -22,6 +36,15 @@ class ComponentItemWidget(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(10)
+
+        if is_selected:
+            check_icon = QLabel()
+            check_icon.setPixmap(
+                qta.icon(
+                    "fa6s.circle-check", color="#0078d7").pixmap(QSize(20, 20))
+            )
+            check_icon.setFixedSize(20, 20)
+            layout.addWidget(check_icon)
 
         info_layout = QVBoxLayout()
         info_layout.setSpacing(2)
@@ -91,6 +114,8 @@ class ConfigDialog(QDialog):
         self.selected_data = {}
         self.inputs = {}
 
+        self._is_initializing = True
+
         self._build_ui()
 
     def _build_ui(self):
@@ -137,6 +162,9 @@ class ConfigDialog(QDialog):
 
         layout.addWidget(self.tab_widget, stretch=1)
 
+        self.compatibility_panel = CompatibilityPanel()
+        layout.addWidget(self.compatibility_panel)
+
         self.summary_panel = self._create_summary_panel()
         layout.addWidget(self.summary_panel)
 
@@ -148,17 +176,19 @@ class ConfigDialog(QDialog):
         skip_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         skip_btn.setMinimumWidth(120)
         skip_btn.setMinimumHeight(40)
-        skip_btn.clicked.connect(self.accept)
+        skip_btn.clicked.connect(self.reject)
 
-        save_btn = QPushButton("Сохранить")
-        save_btn.setObjectName("DialogButtonPrimary")
-        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        save_btn.setMinimumWidth(140)
-        save_btn.setMinimumHeight(40)
-        save_btn.clicked.connect(self.validate_and_accept)
+        self.save_button = QPushButton("Сохранить конфигурацию")
+        self.save_button.setObjectName("DialogButtonPrimary")
+        self.save_button.setCursor(
+            Qt.CursorShape.PointingHandCursor,
+        )
+        self.save_button.setMinimumWidth(180)
+        self.save_button.setMinimumHeight(40)
+        self.save_button.clicked.connect(self._on_save_clicked)
 
         btn_layout.addWidget(skip_btn)
-        btn_layout.addWidget(save_btn)
+        btn_layout.addWidget(self.save_button)
         layout.addLayout(btn_layout)
 
         QShortcut(QKeySequence("Ctrl+Return"), self).activated.connect(
@@ -167,10 +197,44 @@ class ConfigDialog(QDialog):
         QShortcut(QKeySequence("Ctrl+S"), self).activated.connect(
             self.validate_and_accept
         )
-        QShortcut(QKeySequence("Escape"), self).activated.connect(self.accept)
+        QShortcut(QKeySequence("Escape"), self).activated.connect(self.reject)
 
         self._select_initial_components()
         self._update_summary()
+
+        self._scroll_to_selected_items()
+
+        self._is_initializing = False
+
+    def _scroll_to_selected_items(self):
+        """Прокручивает списки к выбранным компонентам после инициализации"""
+        for component_type in [
+            "cpu", "gpu", "mat", "ram", "ssd", "pb", "case", "cooling"
+        ]:
+            tab_index = [
+                "cpu", "gpu", "mat", "ram", "ssd", "pb", "case", "cooling"
+            ].index(component_type)
+            tab_widget = self.tab_widget.widget(tab_index)
+
+            if tab_widget:
+                list_widget = tab_widget.findChild(
+                    QListWidget, "ComponentList",
+                )
+                if list_widget:
+                    selected_id = self.selected_components.get(component_type)
+                    if selected_id:
+                        for i in range(list_widget.count()):
+                            item = list_widget.item(i)
+                            item_data = item.data(Qt.ItemDataRole.UserRole)
+                            if item_data == selected_id:
+                                list_widget.blockSignals(True)
+                                list_widget.setCurrentItem(item)
+                                list_widget.scrollToItem(
+                                    item,
+                                    QListWidget.ScrollHint.PositionAtCenter
+                                )
+                                list_widget.blockSignals(False)
+                                break
 
     def _create_summary_panel(self):
         """Панель с итоговой ценой внизу диалога"""
@@ -259,13 +323,20 @@ class ConfigDialog(QDialog):
 
                 specs = " • ".join(specs_parts[:5]) if specs_parts else None
 
+                is_selected = (cid == self.selected_components.get(
+                    component_type)
+                )
+
                 item_widget = ComponentItemWidget(
-                    name=comp["name"], price=comp["price"], specs=specs
+                    name=comp["name"], price=comp["price"],
+                    specs=specs, is_selected=is_selected,
                 )
 
                 item = QListWidgetItem()
                 item.setData(Qt.ItemDataRole.UserRole, cid)
-                item.setSizeHint(item_widget.sizeHint())
+                item.setSizeHint(QSize(
+                    list_widget.viewport().width() - 20, 70)
+                )
 
                 list_widget.addItem(item)
                 list_widget.setItemWidget(item, item_widget)
@@ -377,7 +448,8 @@ class ConfigDialog(QDialog):
         return tab
 
     def _on_item_selected(
-        self, current_item, previous_item, component_type, list_widget
+            self, current_item, previous_item,
+            component_type, list_widget
     ):
         """Обработчик выбора элемента"""
         if current_item:
@@ -391,7 +463,56 @@ class ConfigDialog(QDialog):
             self.selected_components[component_type] = None
             self.selected_data.pop(component_type, None)
 
+        if not self._is_initializing:
+            self._refresh_list_visuals(list_widget, component_type)
+
         self._update_summary()
+
+    def _refresh_list_visuals(self, list_widget, component_type):
+        """Обновляет визуальное выделение выбранного компонента"""
+        selected_id = self.selected_components.get(component_type)
+
+        for i in range(list_widget.count()):
+            item = list_widget.item(i)
+            widget = list_widget.itemWidget(item)
+
+            if widget and isinstance(widget, ComponentItemWidget):
+                item_id = item.data(Qt.ItemDataRole.UserRole)
+                is_selected = (item_id == selected_id)
+
+                widget.is_selected = is_selected
+
+                list_widget.removeItemWidget(item)
+
+                # Получаем данные компонента
+                comp = self.component_manager.get_component(
+                    component_type, item_id,
+                )
+                if comp:
+                    specs_parts = []
+                    for field_key, suffix in SPECS_FIELDS.get(
+                        component_type, []
+                    ):
+                        if field_key in comp and comp[field_key] not in (
+                            None, "", "Не указано",
+                        ):
+                            value = comp[field_key]
+                            if suffix:
+                                specs_parts.append(f"{value}{suffix}")
+                            else:
+                                specs_parts.append(str(value))
+
+                    specs = " • ".join(specs_parts[:5]) if specs_parts else (
+                        None
+                    )
+
+                    new_widget = ComponentItemWidget(
+                        name=comp["name"],
+                        price=comp["price"],
+                        specs=specs,
+                        is_selected=is_selected
+                    )
+                    list_widget.setItemWidget(item, new_widget)
 
     def _on_tab_changed(self, index):
         """При переключении на вкладку 'Итог'"""
@@ -409,6 +530,7 @@ class ConfigDialog(QDialog):
                     pass
 
         formatted = f"{total:,}₽".replace(",", " ")
+        self._check_compatibility()
         self.total_price_label.setText(formatted)
         self.tab_total_price_label.setText(formatted)
 
@@ -569,3 +691,44 @@ class ConfigDialog(QDialog):
                             self.selected_components[component_type] = cid
                             self.selected_data[component_type] = comp
                             break
+
+    def _check_compatibility(self):
+        """Проверяет совместимость и обновляет панель"""
+        issues = CompatibilityChecker.check_compatibility(self.selected_data)
+        self.compatibility_panel.update_issues(issues)
+
+        if self.compatibility_panel.has_critical_errors():
+            self.save_button.setEnabled(False)
+            self.save_button.setText("⚠️ Исправьте ошибки")
+            self.save_button.setToolTip("Есть критические несовместимости")
+        else:
+            self.save_button.setEnabled(True)
+            self.save_button.setText("Сохранить конфигурацию")
+            self.save_button.setToolTip("")
+
+    def _on_save_clicked(self):
+        """Обработчик клика по кнопке сохранения с проверкой совместимости"""
+        if self.compatibility_panel.has_critical_errors():
+            # Критические ошибки — блокируем сохранение
+            QMessageBox.warning(
+                self,
+                "Невозможно сохранить",
+                "В конфигурации обнаружены критические ошибки "
+                "совместимости.\n\nИсправьте несовместимости комплектующих,"
+                " чтобы сохранить проект.",
+            )
+            return
+
+        if self.compatibility_panel.has_any_issues():
+            reply = QMessageBox.question(
+                self,
+                "Предупреждение",
+                "В конфигурации есть предупреждения о совместимости.\n\n"
+                "Всё равно сохранить?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        self.accept()

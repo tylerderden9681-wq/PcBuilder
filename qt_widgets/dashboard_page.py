@@ -2,9 +2,14 @@ import os
 from datetime import datetime
 from pathlib import Path
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QFrame, QPushButton,
-    QGridLayout, QSplitter
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QFrame,
+    QPushButton,
+    QGridLayout,
+    QSplitter,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QUrl
 from PyQt6.QtGui import QDesktopServices
@@ -62,8 +67,8 @@ class LinkCard(QFrame):
         layout.setSpacing(10)
 
         icon_label = QLabel()
-        icon_label.setPixmap(
-            qta.icon(icon_name, color="#0078d7").pixmap(QSize(20, 20))
+        icon_label.setPixmap(qta.icon(
+            icon_name, color="#0078d7").pixmap(QSize(20, 20))
         )
         layout.addWidget(icon_label)
 
@@ -291,7 +296,8 @@ class DashboardPage(QWidget):
                 "fa6s.folder-open",
                 "#0078d7",
             ),
-            0, 0
+            0,
+            0,
         )
         stats_layout.addWidget(
             StatCard(
@@ -300,7 +306,8 @@ class DashboardPage(QWidget):
                 "fa6s.chart-line",
                 "#2e7d32",
             ),
-            0, 1
+            0,
+            1,
         )
         stats_layout.addWidget(
             StatCard(
@@ -309,7 +316,8 @@ class DashboardPage(QWidget):
                 "fa6s.trophy",
                 "#ff9800",
             ),
-            1, 0
+            1,
+            0,
         )
         stats_layout.addWidget(
             StatCard(
@@ -318,7 +326,8 @@ class DashboardPage(QWidget):
                 "fa6s.clock",
                 "#9c27b0",
             ),
-            1, 1
+            1,
+            1,
         )
 
         layout.addLayout(stats_layout)
@@ -411,7 +420,6 @@ class DashboardPage(QWidget):
 
         header_layout.addStretch()
 
-        # Кнопка "Смотреть все"
         view_all_btn = QPushButton("Смотреть все  →")
         view_all_btn.setObjectName("ViewAllButton")
         view_all_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -431,9 +439,7 @@ class DashboardPage(QWidget):
             projects_layout.setSpacing(12)
 
             sorted_projects = sorted(
-                projects.items(),
-                key=lambda x: int(x[0]),
-                reverse=True
+                projects.items(), key=lambda x: int(x[0]), reverse=True
             )[:6]
 
             for i, (pid, pdata) in enumerate(sorted_projects):
@@ -480,10 +486,11 @@ class DashboardPage(QWidget):
             gradient_colors=["#0041a8", "#0080ff", "#4dc8ff", "#80ecff"],
             font_size=18,
             font_weight=600,
-            font_family="JetBrains Mono"
+            font_family="JetBrains Mono",
         )
         main_layout.addWidget(
-            logo_label, alignment=Qt.AlignmentFlag.AlignVCenter
+            logo_label,
+            alignment=Qt.AlignmentFlag.AlignVCenter,
         )
 
         main_layout.addStretch()
@@ -492,15 +499,14 @@ class DashboardPage(QWidget):
         center_layout.setSpacing(15)
 
         github_link = self._create_footer_link(
-            "GitHub",
-            "https://github.com/tylerderden9681-wq/PcBulder",
-            "fa6b.github"
+            "GitHub", "https://github.com/tylerderden9681-wq/PcBulder",
+            "fa6b.github",
         )
         readme_link = self._create_footer_link(
             "О проекте",
             "https://github.com/tylerderden9681-wq/PcBulder"
             "/blob/main/README.md",
-            "fa6s.file-lines"
+            "fa6s.file-lines",
         )
 
         center_layout.addWidget(github_link)
@@ -513,7 +519,7 @@ class DashboardPage(QWidget):
         info_layout = QHBoxLayout()
         info_layout.setSpacing(12)
 
-        version_label = QLabel("v1.0.0")
+        version_label = QLabel("v1.0.1")
         version_label.setObjectName("FooterVersion")
         info_layout.addWidget(version_label)
 

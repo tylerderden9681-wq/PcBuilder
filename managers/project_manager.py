@@ -1,12 +1,13 @@
 import json
 import sys
 
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     from app_paths import ensure_projects_file
 else:
     import os
-    sys.path.append(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__)))
+
+    sys.path.append(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
     from app_paths import ensure_projects_file
 
@@ -47,8 +48,7 @@ class ProjectManager:
     def get_all_projects(self):
         """Получить все проекты"""
         return {
-            pid: {"id": pid, **pdata}
-            for pid, pdata in self.projects.items()
+            pid: {"id": pid, **pdata} for pid, pdata in self.projects.items()
         }
 
     def create_project(self, project_id, data):

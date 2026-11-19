@@ -1,7 +1,10 @@
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtGui import (
-    QPainter, QLinearGradient, QFont,
-    QColor, QPainterPath,
+    QPainter,
+    QLinearGradient,
+    QFont,
+    QColor,
+    QPainterPath,
 )
 from PyQt6.QtCore import Qt
 
@@ -26,7 +29,6 @@ class GradientLabel(QLabel):
         self._font_weight = font_weight
         self._font_family = font_family
 
-        # Устанавливаем минимальные размеры, чтобы текст не обрезался
         self.setMinimumHeight(font_size + 15)
         self.setMinimumWidth(150)
 

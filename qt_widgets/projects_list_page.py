@@ -2,20 +2,20 @@ import qtawesome as qta
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QPushButton, QGridLayout, QScrollArea,
-    QLineEdit, QComboBox
+    QLineEdit, QComboBox, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QAction
 
 
 class ProjectCardModern(QFrame):
-    """Адаптивная карточка проекта (работает и в сетке, и в списке)"""
+    """Адаптивная карточка проекта"""
 
     open_project = pyqtSignal(str)
 
     def __init__(
-            self, project_id, project_name,
-            desc, price, config,
-            is_list_view=False, parent=None
+        self, project_id, project_name, desc, price, config,
+        is_list_view=False, parent=None
     ):
         super().__init__(parent)
         self.project_id = project_id
@@ -26,56 +26,75 @@ class ProjectCardModern(QFrame):
         self._build_ui(project_name, desc, price, config)
 
     def _build_ui(self, project_name, desc, price, config):
-        # В режиме списка используем горизонтальный layout, в сетке - вертикальный
-        main_layout = QHBoxLayout(self) if self.is_list_view else QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        # === ГЛАВНЫЙ LAYOUT КАРТОЧКИ ===
+        # Привязан к self (карточке)
+        if self.is_list_view:
+            main_layout = QHBoxLayout(self)
+            main_layout.setContentsMargins(20, 15, 20, 15)
+            main_layout.setSpacing(20)
+        else:
+            main_layout = QVBoxLayout(self)
+            main_layout.setContentsMargins(20, 20, 20, 20)
+            main_layout.setSpacing(12)
 
-        # 1. Левая часть: Иконка + Название + Описание
-        left_layout = QVBoxLayout()
+        # === ЛЕВАЯ ЧАСТЬ ===
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)  # привязан к left_widget
+        left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
 
-        header_layout = QHBoxLayout()
+        # Заголовок с иконкой
+        header_layout = QHBoxLayout()  # БЕЗ родителя
         header_layout.setSpacing(10)
-        
+
         icon = QLabel()
-        icon.setPixmap(qta.icon("fa6s.box-open", color="#0078d7").pixmap(QSize(24, 24)))
+        icon.setPixmap(
+            qta.icon("fa6s.box-open", color="#0078d7").pixmap(QSize(24, 24))
+        )
         header_layout.addWidget(icon)
 
         title = QLabel(project_name)
         title.setObjectName("ProjectCardTitle")
         title.setWordWrap(True)
         header_layout.addWidget(title, stretch=1)
-        
-        left_layout.addLayout(header_layout)
 
+        left_layout.addLayout(header_layout)  # ОК: header_layout без родителя
+
+        # Описание
         desc_label = QLabel(desc)
         desc_label.setObjectName("ProjectCardDesc")
         desc_label.setWordWrap(True)
         if not self.is_list_view:
-            desc_label.setMaximumHeight(60) # Ограничиваем высоту только в сетке
+            desc_label.setMaximumHeight(60)
         left_layout.addWidget(desc_label)
 
-        main_layout.addLayout(left_layout, stretch=2 if self.is_list_view else 1)
+        # ВАЖНО: добавляем left_widget (а не left_layout!)
+        main_layout.addWidget(
+            left_widget, stretch=2 if self.is_list_view else 1
+        )
 
         # Разделитель для режима списка
         if self.is_list_view:
-            v_line = QFrame()
-            v_line.setFrameShape(QFrame.Shape.VLine)
-            v_line.setFrameShadow(QFrame.Shadow.Sunken)
-            v_line.setStyleSheet("color: #3a3b3c;")
-            main_layout.addWidget(v_line)
+            separator = QFrame()
+            separator.setFrameShape(QFrame.Shape.VLine)
+            separator.setFrameShadow(QFrame.Shadow.Sunken)
+            separator.setStyleSheet("background-color: #3a3b3c;")
+            main_layout.addWidget(separator)
 
-        # 2. Правая часть: Конфигурация + Цена + Кнопка
-        right_layout = QVBoxLayout()
+        # === ПРАВАЯ ЧАСТЬ ===
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)  # привязан к right_widget
+        right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(12)
 
-        # Конфигурация (теперь с иконками)
-        config_layout = QHBoxLayout()
+        # Конфигурация
+        config_layout = QHBoxLayout()  # БЕЗ родителя
         config_layout.setSpacing(8)
 
         cpu_icon = QLabel()
-        cpu_icon.setPixmap(qta.icon("fa6s.microchip", color="#8a8d91").pixmap(QSize(16, 16)))
+        cpu_icon.setPixmap(
+            qta.icon("fa6s.microchip", color="#8a8d91").pixmap(QSize(16, 16))
+        )
         config_layout.addWidget(cpu_icon)
 
         config_label = QLabel(config)
@@ -83,10 +102,10 @@ class ProjectCardModern(QFrame):
         config_label.setWordWrap(True)
         config_layout.addWidget(config_label, stretch=1)
 
-        right_layout.addLayout(config_layout)
+        right_layout.addLayout(config_layout)  # ОК: config_layout без родителя
 
         # Низ: Цена + Кнопка
-        footer_layout = QHBoxLayout()
+        footer_layout = QHBoxLayout()  # БЕЗ родителя
         footer_layout.setSpacing(15)
 
         try:
@@ -94,38 +113,43 @@ class ProjectCardModern(QFrame):
         except Exception:
             price_formatted = str(price)
 
-        price_layout = QHBoxLayout()
+        price_layout = QHBoxLayout()  # БЕЗ родителя
         price_layout.setSpacing(5)
         price_icon = QLabel()
-        price_icon.setPixmap(qta.icon("fa6s.ruble-sign", color="#2e7d32").pixmap(QSize(18, 18)))
+        price_icon.setPixmap(
+            qta.icon("fa6s.ruble-sign", color="#2e7d32").pixmap(QSize(18, 18))
+        )
         price_layout.addWidget(price_icon)
 
         price_label = QLabel(price_formatted)
         price_label.setObjectName("ProjectCardPrice")
         price_layout.addWidget(price_label)
 
-        footer_layout.addLayout(price_layout)
+        footer_layout.addLayout(price_layout)  # ОК
         footer_layout.addStretch()
 
         details_btn = QPushButton("Открыть")
         details_btn.setObjectName("ProjectCardButton")
         details_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        if not self.is_list_view:
-            details_btn.setFixedSize(100, 34)
+        details_btn.setFixedHeight(34)
         details_btn.clicked.connect(
             lambda: self.open_project.emit(self.project_id)
         )
         footer_layout.addWidget(details_btn)
 
-        right_layout.addLayout(footer_layout)
+        right_layout.addLayout(footer_layout)  # ОК
 
+        # ВАЖНО: добавляем right_widget (а не right_layout!)
         if self.is_list_view:
-            right_container = QWidget()
-            right_container.setLayout(right_layout)
-            right_container.setFixedWidth(350)
-            main_layout.addWidget(right_container)
+            right_widget.setMinimumWidth(350)
+            right_widget.setMaximumWidth(500)
+            right_widget.setSizePolicy(
+                QSizePolicy.Policy.Preferred,
+                QSizePolicy.Policy.Expanding
+            )
+            main_layout.addWidget(right_widget)
         else:
-            main_layout.addLayout(right_layout)
+            main_layout.addWidget(right_widget)
 
     def enterEvent(self, event):
         self.setProperty("hovered", True)
@@ -152,6 +176,7 @@ class ProjectsListPage(QWidget):
         self.project_manager = project_manager
         self.setObjectName("ProjectsListPage")
         self.current_view = "grid"
+        self._current_columns = 3
         self._build_ui()
 
     def _build_ui(self):
@@ -215,9 +240,19 @@ class ProjectsListPage(QWidget):
         layout.setContentsMargins(15, 12, 15, 12)
         layout.setSpacing(15)
 
+        # Поиск с иконкой лупы
         self.search_input = QLineEdit()
         self.search_input.setObjectName("SearchInput")
-        self.search_input.setPlaceholderText("🔍  Поиск по названию или описанию...")
+        self.search_input.setPlaceholderText(
+            "Поиск по названию или описанию..."
+        )
+        self.search_input.setClearButtonEnabled(True)
+
+        search_icon = qta.icon("fa6s.magnifying-glass", color="#8a8d91")
+        search_action = QAction(search_icon, "", self.search_input)
+        self.search_input.addAction(
+            search_action, QLineEdit.ActionPosition.LeadingPosition
+        )
         self.search_input.textChanged.connect(self._filter_projects)
         layout.addWidget(self.search_input, stretch=1)
 
@@ -267,6 +302,27 @@ class ProjectsListPage(QWidget):
     def _filter_projects(self):
         self._load_projects()
 
+    def resizeEvent(self, event):
+        """Пересчитывает количество колонок при изменении размера окна"""
+        super().resizeEvent(event)
+        if self.current_view == "grid":
+            self._recalculate_grid_columns()
+
+    def _recalculate_grid_columns(self):
+        """Адаптивное количество колонок в зависимости от ширины"""
+        width = self.content.width() if self.content else self.width()
+
+        if width < 700:
+            columns = 1
+        elif width < 1100:
+            columns = 2
+        else:
+            columns = 3
+
+        if getattr(self, '_current_columns', 0) != columns:
+            self._current_columns = columns
+            self._load_projects()
+
     def _load_projects(self):
         # Безопасная очистка layout
         while self.projects_layout.count():
@@ -274,7 +330,6 @@ class ProjectsListPage(QWidget):
             if item.widget():
                 item.widget().deleteLater()
             elif item.layout():
-                # Рекурсивная очистка вложенных layout (для grid)
                 self._clear_layout(item.layout())
 
         projects = self.project_manager.get_all_projects()
@@ -283,25 +338,34 @@ class ProjectsListPage(QWidget):
         # Фильтрация
         filtered = {
             pid: pdata for pid, pdata in projects.items()
-            if search_text in pdata["name"].lower() or search_text in pdata["description"].lower()
+            if search_text in pdata["name"].lower()
+            or search_text in pdata["description"].lower()
         }
 
         # Сортировка
         sort_index = self.sort_combo.currentIndex()
         items = list(filtered.items())
 
-        if sort_index == 0: items.sort(key=lambda x: int(x[0]), reverse=True)
-        elif sort_index == 1: items.sort(key=lambda x: int(x[0]))
-        elif sort_index == 2: items.sort(key=lambda x: int(x[1].get("price", 0)), reverse=True)
-        elif sort_index == 3: items.sort(key=lambda x: int(x[1].get("price", 0)))
-        elif sort_index == 4: items.sort(key=lambda x: x[1]["name"])
+        if sort_index == 0:
+            items.sort(key=lambda x: int(x[0]), reverse=True)
+        elif sort_index == 1:
+            items.sort(key=lambda x: int(x[0]))
+        elif sort_index == 2:
+            items.sort(key=lambda x: int(x[1].get("price", 0)), reverse=True)
+        elif sort_index == 3:
+            items.sort(key=lambda x: int(x[1].get("price", 0)))
+        elif sort_index == 4:
+            items.sort(key=lambda x: x[1]["name"])
 
         if not items:
-            empty_layout = QVBoxLayout()
+            empty_layout = QVBoxLayout()  # БЕЗ родителя
             empty_layout.addStretch()
 
             empty_icon = QLabel()
-            empty_icon.setPixmap(qta.icon("fa6s.folder-open", color="#3a3b3c").pixmap(QSize(64, 64)))
+            empty_icon.setPixmap(
+                qta.icon("fa6s.folder-open", color="#3a3b3c")
+                .pixmap(QSize(64, 64))
+            )
             empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_layout.addWidget(empty_icon)
 
@@ -315,33 +379,56 @@ class ProjectsListPage(QWidget):
             return
 
         if self.current_view == "grid":
-            grid = QGridLayout()
+            grid = QGridLayout()  # БЕЗ родителя
             grid.setSpacing(20)
-            grid.setColumnStretch(0, 1)
-            grid.setColumnStretch(1, 1)
-            grid.setColumnStretch(2, 1)
+            grid.setHorizontalSpacing(20)
+            grid.setVerticalSpacing(20)
+
+            columns = getattr(self, '_current_columns', 3)
+            for i in range(columns):
+                grid.setColumnStretch(i, 1)
 
             for i, (pid, pdata) in enumerate(items):
-                row = i // 3
-                col = i % 3
-                config = f"{pdata['config'].get('cpu', '—')}  •  {pdata['config'].get('gpu', '—')}"
+                row = i // columns
+                col = i % columns
+                config = (
+                    f"{pdata['config'].get('cpu', '—')}  •  "
+                    f"{pdata['config'].get('gpu', '—')}"
+                )
 
-                card = ProjectCardModern(pid, pdata["name"], pdata["description"], pdata["price"], config, is_list_view=False)
+                card = ProjectCardModern(
+                    pid, pdata["name"], pdata["description"],
+                    pdata["price"], config, is_list_view=False
+                )
                 card.open_project.connect(self.open_project.emit)
+
+                card.setMinimumWidth(280)
+                card.setMinimumHeight(200)
+                card.setSizePolicy(
+                    QSizePolicy.Policy.Expanding,
+                    QSizePolicy.Policy.Expanding
+                )
+
                 grid.addWidget(card, row, col)
 
+            # ОК: grid без родителя, можно addLayout
             self.projects_layout.addLayout(grid)
         else:
             for pid, pdata in items:
-                config = f"""
-                    {pdata['config'].get('cpu', '—')}  •  {pdata['config'].get('gpu', '—')}
-                    """
-                
-                card = ProjectCardModern(pid, pdata["name"], pdata["description"], pdata["price"], config, is_list_view=True)
+                config = (
+                    f"{pdata['config'].get('cpu', '—')}  •  "
+                    f"{pdata['config'].get('gpu', '—')}"
+                )
+
+                card = ProjectCardModern(
+                    pid, pdata["name"], pdata["description"],
+                    pdata["price"], config, is_list_view=True
+                )
                 card.open_project.connect(self.open_project.emit)
                 self.projects_layout.addWidget(card)
 
     def _clear_layout(self, layout):
+        """Рекурсивно очищает layout"""
         while layout.count():
             item = layout.takeAt(0)
             if item.widget():

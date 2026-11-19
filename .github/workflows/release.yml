@@ -17,7 +17,7 @@ jobs:
       - name: Скачивание кода
         uses: actions/checkout@v4
 
-      - name: Установка Python
+      - name: Установка Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -29,7 +29,7 @@ jobs:
           pip install pyinstaller
 
       - name: Сборка .exe файла
-        run: pyinstaller --noconfirm --onefile --windowed --paths="." --hidden-import="qt_widgets.project_page" --collect-submodules="qt_widgets" --collect-submodules="managers" --icon="assets/icon.ico" --add-data "fonts;fonts" --add-data "data/dependencies.db;data" --add-data "assets;assets" --add-data "qt_widgets;qt_widgets" --add-data "managers;managers" --name "PCBuilder" main.py
+        run: pyinstaller --noconfirm --onefile --windowed --paths="." --collect-submodules="qt_widgets" --collect-submodules="managers" --icon="assets/icon.ico" --add-data "fonts;fonts" --add-data "data/dependencies.db;data" --add-data "assets;assets" --add-data "qt_widgets;qt_widgets" --add-data "managers;managers" --name "PCBuilder" main.py
 
       - name: Создание черновика релиза
         uses: softprops/action-gh-release@v2
