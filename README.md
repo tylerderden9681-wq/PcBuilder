@@ -86,12 +86,34 @@
 
 ## 🚀 Установка и запуск
 
-1. **Склонируйте репозиторий**:
+### 1. Инструкция для запуска стабильной версии приложения (ветка main):
+
+1. <a id="clone-main"></a> **Склонируйте репозиторий**:
    ```bash
    git clone https://github.com/tylerderden9681-wq/PcBuilder.git
    cd PcBuilder
+   ```
 
-2. **Создайте виртуальное окружение**:
+2. <a id="create-venv"></a> **Создайте виртуальное окружение**:
+
+   **Для пользователей Linux/MacOS**:
+   ```bash
+   python3 -m venv venv
+   ```
+
+   **Для пользователей Windows с `установленным Python`**:
+   ```bash
+   python -m venv venv
+   ```
+
+   **Для пользователей Windows без установленного Python**:
+   ```bash
+   py -3.12 -m venv venv
+   ```
+
+   *P.S.*: вместо версии python 3.12 вы можете установить любую версию не ниже 3.10
+
+3. <a id="activate-venv"></a>**Активируйте виртуальное окружение**:
 
    *Примечание*: на разных OC команды немного отличаются, так что используйте команды, применимые именно для вашей OC и вашего терминала:
 
@@ -119,25 +141,38 @@
    source venv/Scripts/activate
    ```
 
-3. **Установите зависимости**:
+4. **Установите зависимости для `продового` режима**:
 
-   - В режиме разработки предпочтительно установить зависимости из `requirements/dev.txt`, где находятся линтеры для грамотного и понятного написания кода:
-
-   ```bash
-   pip install -r requirements/dev.txt
-   ```
-
-   - Для работы проекта нужно установить зависимости, находящиеся в файле `requirements/prod.txt`, так что воспользуйтесь командой:
+   Для работы проекта нужно установить зависимости, находящиеся в файле `requirements/prod.txt`, так что воспользуйтесь командой:
 
    ```bash
    pip install -r requirements/prod.txt
    ```
 
-4. **Запустите проект**:
+5. **Запустите проект**:
 
    Чтобы запустить проект, воспользуйтесь командой:
    ```bash
    python main.py
+   ```
+
+### 2. Инструкция для разработчиков и контрибьюторов (ветка dev):
+
+1. **Склонируйте ветку dev командой и перейдите в склонированную директорию**:
+
+   ```bash
+   git clone --branch dev https://github.com/tylerderden9681-wq/PcBuilder.git
+   cd PcBulder
+   ```
+
+2. **Проделайте шаги по [созданию](#create-venv) и [активации](#activate-venv) виртуального окружения**
+
+3. **Установите зависимости для разработки (с линтерами flake8 и black):**
+
+   В режиме разработки предпочтительно установить зависимости из `requirements/dev.txt`, где находятся линтеры для грамотного и понятного написания кода:
+
+   ```bash
+   pip install -r requirements/dev.txt
    ```
 
 
@@ -220,16 +255,38 @@ The application is characterized by clean code (the code was written using the `
 
 ---
 
-## 🚀 Installing and launch project
+## 🚀 Installation and launch
 
-1. **Clone the repository**:
+### 1. Instructions for launching the stable version of the application (main branch):
+
+1. <a id="clone-main"></a> **Clone the repository**:
    ```bash
    git clone https://github.com/tylerderden9681-wq/PcBuilder.git
    cd PcBuilder
+   ```
 
-2. **Create a virtual environment**:
+2. <a id="create-venv-en"></a> **Create a virtual environment**:
 
-   *Note*: the commands differ slightly across different operating systems, so use the commands that are applicable to your specific operating system and terminal:
+   **For Linux/MacOS users**:
+   ```bash
+   python3 -m venv venv
+   ```
+
+   **For Windows users with `Python installed`**:
+   ```bash
+   python -m venv venv
+   ```
+
+   **For Windows users without Python installed**:
+   ```bash
+   py -3.12 -m venv venv
+   ```
+
+   *P.S.*: instead of Python version 3.12, you can install any version no lower than 3.10.
+
+3. <a id="activate-venv-en"></a>**Activate the virtual environment**:
+
+   *Note*: the commands differ slightly depending on the OS, so use the commands that are applicable to your OS and your terminal:
 
    **Linux/MacOS**:
    ```bash
@@ -238,7 +295,7 @@ The application is characterized by clean code (the code was written using the `
 
    **Windows**:
 
-   In Windows, things aren’t that simple, as the commands differ slightly for different terminals and look like this:
+   In Windows, not It’s that simple, since the commands differ slightly for different terminals and look like this:
 
    **CMD**:
    ```bash
@@ -255,24 +312,36 @@ The application is characterized by clean code (the code was written using the `
    source venv/Scripts/activate
    ```
 
-3. **Install the dependencies**:
+4. **Install dependencies for `prod` mode**:
 
-   - In development mode, it is preferable to install dependencies from `requirements/dev.txt`, which contains linters that help ensure code is written in a proper and readable manner:
-
-   ```bash
-   pip install -r requirements/dev.txt
-   ```
-
-   - To run the project, you need to install the dependencies listed in the `requirements/prod.txt` file, so use the following command:
+   For the project to work, you need to install the dependencies listed in the `requirements/prod.txt` file, so use the following command:
 
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements/prod.txt
    ```
 
-4. **Launch the project**:
+5. **Run the project**:
 
-   To launch the project, use the command:
+   To run the project, use the following command:
    ```bash
    python main.py
    ```
 
+### 2. Instructions for developers and contributors (dev branch):
+
+1. **Clone the `dev` branch using the command and navigate to the cloned directory**:
+
+   ```bash
+   git clone --branch dev https://github.com/tylerderden9681-wq/PcBuilder.git
+   cd PcBuilder
+   ```
+
+2. **Follow the steps to [create](#create-venv-en) and [activate](#activate-venv-en) the virtual environment.**
+
+3. **Install development dependencies (with flake8 and black linters):**
+
+   In development mode, it is preferable to install dependencies from `requirements/dev.txt`, which contain linters for writing clean and understandable code:
+
+   ```bash
+   pip install -r requirements/dev.txt
+   ```
